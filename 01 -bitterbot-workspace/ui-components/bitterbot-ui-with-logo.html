@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BitterBot - Decentralized Intelligence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Animated background */
+        .animated-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
+        }
+        
+        .particles {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(168, 85, 247, 0.6);
+            border-radius: 50%;
+            animation: float 20s infinite linear;
+        }
+        
+        @keyframes float {
+            from {
+                transform: translateY(100vh) translateX(0);
+            }
+            to {
+                transform: translateY(-100px) translateX(100px);
+            }
+        }
+        
+        /* Main layout */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo {
+            width: 48px;
+            height: 48px;
+            position: relative;
+        }
+        
+        .logo-glow {
+            position: absolute;
+            inset: -10px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.6) 0%, transparent 60%);
+            filter: blur(15px);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.1); }
+        }
+        
+        .logo svg {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .brand-text h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .brand-text .subtitle {
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+        
+        /* Main content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(139, 92, 246, 0.2);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        .sidebar h2 {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+            margin-bottom: 1rem;
+        }
+        
+        .chat-history-item {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid transparent;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .chat-history-item:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            background: rgba(139, 92, 246, 0.15);
+        }
+        
+        /* Chat area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .message {
+            display: flex;
+            gap: 1rem;
+            max-width: 70%;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+        
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+        
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+        }
+        
+        .message-content {
+            background: rgba(139, 92, 246, 0.1);
+            padding: 1rem;
+            border-radius: 1rem;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        
+        .message.user .message-content {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+        
+        /* Input area */
+        .chat-input-container {
+            padding: 1.5rem 2rem;
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        
+        .chat-input-wrapper {
+            display: flex;
+            gap: 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .chat-input {
+            flex: 1;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 2rem;
+            padding: 0.75rem 1.5rem;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .chat-input:focus {
+            outline: none;
+            border-color: rgba(139, 92, 246, 0.6);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+        
+        .send-button {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a855f7, #7c3aed);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(139, 92, 246, 0.4);
+        }
+        
+        /* BitterBot Computer panel */
+        .bitterbot-computer {
+            width: 380px;
+            background: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(139, 92, 246, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .computer-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        
+        .computer-header h2 {
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .tab-navigation {
+            display: flex;
+            gap: 0.25rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.25rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 0.5rem;
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        
+        .tab.active {
+            background: rgba(139, 92, 246, 0.2);
+            color: #e9d5ff;
+        }
+        
+        .computer-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        .task-item {
+            padding: 1rem;
+            background: rgba(139, 92, 246, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .task-status {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #a855f7, #ec4899);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        
+        /* Loading dots */
+        .loading-dots {
+            display: flex;
+            gap: 0.25rem;
+            padding: 1rem;
+            justify-content: center;
+        }
+        
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #a855f7;
+            animation: bounce 1.4s ease-in-out infinite;
+        }
+        
+        .dot:nth-child(2) { animation-delay: 0.16s; }
+        .dot:nth-child(3) { animation-delay: 0.32s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { 
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg">
+        <div class="particles" id="particles"></div>
+    </div>
+    
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-container">
+                <div class="logo">
+                    <div class="logo-glow"></div>
+                    <svg viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="purple-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#c084fc" />
+                                <stop offset="50%" style="stop-color:#a855f7" />
+                                <stop offset="100%" style="stop-color:#7c3aed" />
+                            </linearGradient>
+                            <linearGradient id="letter-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#e9d5ff" />
+                                <stop offset="50%" style="stop-color:#c084fc" />
+                                <stop offset="100%" style="stop-color:#a855f7" />
+                            </linearGradient>
+                        </defs>
+                        
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#purple-gradient)" stroke-width="4"/>
+                        
+                        <g>
+                            <path d="M 25 30 L 25 70 L 35 70 Q 45 70 45 60 Q 45 50 35 50 L 25 50 M 25 50 L 35 50 Q 45 50 45 40 Q 45 30 35 30 L 25 30" 
+                                  fill="none" stroke="url(#letter-gradient)" stroke-width="4"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M 55 30 L 55 70 L 65 70 Q 75 70 75 60 Q 75 50 65 50 L 55 50 M 55 50 L 65 50 Q 75 50 75 40 Q 75 30 65 30 L 55 30" 
+                                  fill="none" stroke="url(#letter-gradient)" stroke-width="4"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                        </g>
+                        
+                        <g opacity="0.8">
+                            <path d="M 5 50 L 15 50 L 20 45" fill="none" stroke="#c084fc" stroke-width="2">
+                                <animate attributeName="stroke-dasharray" values="0 100;100 0;0 100" dur="3s" repeatCount="indefinite"/>
+                            </path>
+                            <path d="M 95 50 L 85 50 L 80 55" fill="none" stroke="#c084fc" stroke-width="2">
+                                <animate attributeName="stroke-dasharray" values="0 100;100 0;0 100" dur="3s" repeatCount="indefinite" begin="1.5s"/>
+                            </path>
+                            <circle cx="5" cy="50" r="3" fill="#c084fc">
+                                <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+                            </circle>
+                            <circle cx="95" cy="50" r="3" fill="#c084fc">
+                                <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite" begin="1s"/>
+                            </circle>
+                        </g>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1><span style="color: #fff;">Bitter</span><span style="color: #a855f7;">Bot</span></h1>
+                    <p class="subtitle">Decentralized Intelligence</p>
+                </div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <h2>Chat History</h2>
+                <div class="chat-history-item">
+                    <div style="font-weight: 500; margin-bottom: 0.25rem;">Trademark Analysis</div>
+                    <div style="font-size: 0.875rem; color: #9ca3af;">2 hours ago</div>
+                </div>
+                <div class="chat-history-item">
+                    <div style="font-weight: 500; margin-bottom: 0.25rem;">Memory System Design</div>
+                    <div style="font-size: 0.875rem; color: #9ca3af;">Yesterday</div>
+                </div>
+                <div class="chat-history-item">
+                    <div style="font-weight: 500; margin-bottom: 0.25rem;">Dream Engine Research</div>
+                    <div style="font-size: 0.875rem; color: #9ca3af;">3 days ago</div>
+                </div>
+            </aside>
+            
+            <!-- Chat Area -->
+            <div class="chat-container">
+                <div class="chat-messages">
+                    <div class="message user">
+                        <div class="message-avatar">VG</div>
+                        <div class="message-content">
+                            Help me implement a federated learning system for BitterBot's P2P network
+                        </div>
+                    </div>
+                    
+                    <div class="message assistant">
+                        <div class="message-avatar">BB</div>
+                        <div class="message-content">
+                            I'll help you design a federated learning system for BitterBot! This is a complex task that involves distributed model training, secure aggregation, and P2P communication. Let me break this down into manageable components...
+                        </div>
+                    </div>
+                    
+                    <div class="loading-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+                
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <input type="text" class="chat-input" placeholder="Ask BitterBot anything..." />
+                        <button class="send-button">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- BitterBot Computer Panel -->
+            <aside class="bitterbot-computer">
+                <div class="computer-header">
+                    <h2>
+                        BitterBot's Computer
+                        <span class="status-indicator"></span>
+                    </h2>
+                    <div class="tab-navigation">
+                        <button class="tab active">Tasks</button>
+                        <button class="tab">Tools</button>
+                        <button class="tab">Memory</button>
+                    </div>
+                </div>
+                
+                <div class="computer-content">
+                    <!-- Task View -->
+                    <div class="task-item">
+                        <div class="task-header">
+                            <h3 style="font-size: 0.875rem; font-weight: 500;">Analyze P2P Architecture</h3>
+                            <span class="task-status">In Progress</span>
+                        </div>
+                        <p style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.5rem;">
+                            Researching existing P2P frameworks and protocols
+                        </p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 65%;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="task-item">
+                        <div class="task-header">
+                            <h3 style="font-size: 0.875rem; font-weight: 500;">Design Secure Aggregation</h3>
+                            <span class="task-status" style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc;">Pending</span>
+                        </div>
+                        <p style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.5rem;">
+                            Implement differential privacy and secure multi-party computation
+                        </p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="task-item">
+                        <div class="task-header">
+                            <h3 style="font-size: 0.875rem; font-weight: 500;">Generate Code Examples</h3>
+                            <span class="task-status" style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc;">Queued</span>
+                        </div>
+                        <p style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.5rem;">
+                            Create Python implementation with PyTorch and PySyft
+                        </p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+    
+    <script>
+        // Create floating particles
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 50; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 20 + 's';
+            particle.style.animationDuration = (20 + Math.random() * 10) + 's';
+            particlesContainer.appendChild(particle);
+        }
+        
+        // Simulate task progress
+        setTimeout(() => {
+            const progressBars = document.querySelectorAll('.progress-fill');
+            progressBars[0].style.width = '85%';
+        }, 2000);
+        
+        setTimeout(() => {
+            const progressBars = document.querySelectorAll('.progress-fill');
+            const statuses = document.querySelectorAll('.task-status');
+            progressBars[0].style.width = '100%';
+            statuses[0].textContent = 'Completed';
+            statuses[0].style.background = 'rgba(34, 197, 94, 0.2)';
+            statuses[0].style.color = '#86efac';
+            
+            progressBars[1].style.width = '30%';
+            statuses[1].textContent = 'In Progress';
+            statuses[1].style.background = 'rgba(34, 197, 94, 0.2)';
+            statuses[1].style.color = '#86efac';
+        }, 4000);
+    </script>
+</body>
+</html>

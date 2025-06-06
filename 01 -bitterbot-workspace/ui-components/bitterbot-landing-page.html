@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BitterBot - Distributed Intelligence</title>
+    <style>
+        /* Base Styles */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary-purple: #a855f7;
+            --secondary-purple: #7c3aed;
+            --accent-purple: #c084fc;
+            --pink-accent: #ec4899;
+            --background-dark: #0a0a0f;
+            --surface-dark: #111827;
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --border-color: rgba(139, 92, 246, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .animated-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
+            animation: gradientShift 20s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            33% { transform: scale(1.1) rotate(120deg); }
+            66% { transform: scale(0.9) rotate(240deg); }
+        }
+
+        /* Particles */
+        .particles {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(168, 85, 247, 0.6);
+            border-radius: 50%;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            from {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            to {
+                transform: translateY(-100px) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* Container */
+        .container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            padding: 2rem 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        /* Logo with animation */
+        .logo-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 56px;
+            height: 56px;
+            position: relative;
+        }
+
+        .logo-glow {
+            position: absolute;
+            inset: -15px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.6) 0%, transparent 60%);
+            filter: blur(20px);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.1); }
+        }
+
+        .logo svg {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-name {
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+        }
+
+        .brand-tagline {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Sign Up Button */
+        .sign-up-btn {
+            background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .sign-up-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 0;
+            text-align: center;
+            margin-top: -10vh;
+        }
+
+        .greeting {
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .subtitle {
+            font-size: clamp(1.25rem, 3vw, 1.75rem);
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        /* Search Container */
+        .search-container {
+            width: 100%;
+            max-width: 700px;
+            position: relative;
+            margin-bottom: 2rem;
+            animation: fadeIn 0.8s ease-out 0.4s both;
+        }
+
+        .search-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.25rem 4rem 1.25rem 1.5rem;
+            font-size: 1rem;
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+            background: rgba(139, 92, 246, 0.15);
+        }
+
+        .submit-btn {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
+            color: white;
+            border: none;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            animation: fadeIn 0.8s ease-out 0.6s both;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1rem 2rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .action-btn i {
+            font-size: 1rem;
+            color: var(--accent-purple);
+        }
+
+        /* Trust Fund Particles Badge */
+        .trust-badge {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            color: var(--accent-purple);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 1s ease-out 1s both;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-wrap: wrap;
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .logo-wrapper {
+                width: 100%;
+                justify-content: center;
+                margin-bottom: 1rem;
+            }
+            
+            .action-buttons {
+                width: 100%;
+            }
+            
+            .action-btn {
+                flex: 1;
+            }
+            
+            .trust-badge {
+                display: none;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="animated-bg"></div>
+    <div class="particles" id="particles"></div>
+    
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo-wrapper">
+                    <div class="logo">
+                        <div class="logo-glow"></div>
+                        <svg viewBox="0 0 100 100">
+                            <defs>
+                                <linearGradient id="purple-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#c084fc" />
+                                    <stop offset="50%" style="stop-color:#a855f7" />
+                                    <stop offset="100%" style="stop-color:#7c3aed" />
+                                </linearGradient>
+                                <linearGradient id="letter-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#e9d5ff" />
+                                    <stop offset="50%" style="stop-color:#c084fc" />
+                                    <stop offset="100%" style="stop-color:#a855f7" />
+                                </linearGradient>
+                            </defs>
+                            
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="url(#purple-gradient)" stroke-width="4"/>
+                            
+                            <g>
+                                <path d="M 25 30 L 25 70 L 35 70 Q 45 70 45 60 Q 45 50 35 50 L 25 50 M 25 50 L 35 50 Q 45 50 45 40 Q 45 30 35 30 L 25 30" 
+                                      fill="none" stroke="url(#letter-gradient)" stroke-width="4"
+                                      stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M 55 30 L 55 70 L 65 70 Q 75 70 75 60 Q 75 50 65 50 L 55 50 M 55 50 L 65 50 Q 75 50 75 40 Q 75 30 65 30 L 55 30" 
+                                      fill="none" stroke="url(#letter-gradient)" stroke-width="4"
+                                      stroke-linecap="round" stroke-linejoin="round"/>
+                            </g>
+                            
+                            <g opacity="0.8">
+                                <path d="M 5 50 L 15 50 L 20 45" fill="none" stroke="#c084fc" stroke-width="2">
+                                    <animate attributeName="stroke-dasharray" values="0 100;100 0;0 100" dur="3s" repeatCount="indefinite"/>
+                                </path>
+                                <path d="M 95 50 L 85 50 L 80 55" fill="none" stroke="#c084fc" stroke-width="2">
+                                    <animate attributeName="stroke-dasharray" values="0 100;100 0;0 100" dur="3s" repeatCount="indefinite" begin="1.5s"/>
+                                </path>
+                                <circle cx="5" cy="50" r="3" fill="#c084fc">
+                                    <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+                                </circle>
+                                <circle cx="95" cy="50" r="3" fill="#c084fc">
+                                    <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite" begin="1s"/>
+                                </circle>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="brand-text">
+                        <div class="brand-name">
+                            <span style="color: var(--text-primary);">Bitter</span>
+                            <span style="color: var(--primary-purple);">Bot</span>
+                        </div>
+                        <div class="brand-tagline">Decentralized Intelligence</div>
+                    </div>
+                </div>
+                <a href="/auth"><button class="sign-up-btn">Get Started</button></a>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <h1 class="greeting">Hey <span id="userName">there</span></h1>
+            <p class="subtitle">What would you like to create today?</p>
+            
+            <form id="searchForm" class="search-container">
+                <div class="search-wrapper">
+                    <input type="text" class="search-input" placeholder="Ask me anything..." id="searchInput">
+                    <button type="submit" class="submit-btn" aria-label="Submit">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </form>
+            
+            <div class="action-buttons">
+                <a href="/dashboard?mode=deepsearch" class="action-btn">
+                    <i class="fas fa-search"></i>
+                    <span>Deep Search</span>
+                </a>
+                <a href="/dashboard?mode=think" class="action-btn">
+                    <i class="far fa-lightbulb"></i>
+                    <span>Deep Think</span>
+                </a>
+                <a href="/dashboard?mode=create" class="action-btn">
+                    <i class="fas fa-code"></i>
+                    <span>Create</span>
+                </a>
+            </div>
+        </main>
+    </div>
+    
+    <div class="trust-badge">
+        <i class="fas fa-sparkles"></i> Powered by Trust Fund Particles™
+    </div>
+
+    <script>
+        // Create floating particles
+        const particlesContainer = document.getElementById('particles');
+        const particleCount = window.innerWidth < 768 ? 30 : 50;
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 20 + 's';
+            particle.style.animationDuration = (20 + Math.random() * 10) + 's';
+            particlesContainer.appendChild(particle);
+        }
+        
+        // Handle form submission
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const query = document.getElementById('searchInput').value.trim();
+            if (query) {
+                window.location.href = `/dashboard?prompt=${encodeURIComponent(query)}`;
+            }
+        });
+        
+        // Focus input on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('searchInput').focus();
+            }, 800);
+            
+            // Set user name if available
+            // This would come from your auth system/session
+            const userName = getUserName(); // You'll implement this
+            if (userName && userName !== 'Guest') {
+                document.getElementById('userName').textContent = userName;
+            }
+        });
+        
+        // Mock function - replace with actual user data fetch
+        function getUserName() {
+            // In production, this would:
+            // - Check localStorage/sessionStorage
+            // - Make API call to get user info
+            // - Return user's first name or nickname
+            
+            // For now, just return null to show "there"
+            return null; // Change to "Bitter" for you, user's name for others
+        }
+        
+        // Add subtle hover effect to background on mouse move
+        let mouseX = 0, mouseY = 0;
+        let currentX = 0, currentY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) - 0.5;
+            mouseY = (e.clientY / window.innerHeight) - 0.5;
+        });
+        
+        function animate() {
+            currentX += (mouseX - currentX) * 0.05;
+            currentY += (mouseY - currentY) * 0.05;
+            
+            const bg = document.querySelector('.animated-bg');
+            bg.style.transform = `translate(${currentX * 20}px, ${currentY * 20}px)`;
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+    </script>
+</body>
+</html>
