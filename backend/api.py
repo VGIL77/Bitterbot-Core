@@ -208,6 +208,18 @@ async def get_agents_api():
 async def initiate_agent_api():
     return {"agent_id": "bitter-bot-1", "status": "ready"}
 
+@app.get("/user")
+async def get_user():
+    return {"id": "mock-user", "email": "bitter@bot.com"}
+
+@app.get("/projects")
+async def get_projects():
+    return []  # Empty projects for now
+
+@app.get("/threads")
+async def get_threads():
+    return []  # Empty threads
+
 if __name__ == "__main__":
     import uvicorn
     
