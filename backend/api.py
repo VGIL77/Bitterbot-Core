@@ -168,17 +168,21 @@ async def discover_custom_mcp_tools(request: CustomMCPDiscoverRequest):
         logger.error(f"Error discovering custom MCP tools: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/subscription")
+@app.get("/billing/subscription")
 async def get_subscription():
     return {"status": "active", "type": "premium", "unlimited": True}
+
+@app.get("/billing/available-models")
+async def get_models():
+    return {"models": ["claude-3-opus", "gpt-4"]}
+
+@app.get("/agents/{agent_id}/builder-chat-history")
+async def get_builder_history(agent_id: str):
+    return {"history": []}
 
 @app.get("/api/agents")
 async def get_agents():
     return {"agents": []}
-
-@app.get("/api/available-models")
-async def get_models():
-    return {"models": ["claude-3-opus", "gpt-4"]}
 
 @app.post("/api/initiate-agent")
 async def initiate_agent():
