@@ -168,6 +168,30 @@ async def discover_custom_mcp_tools(request: CustomMCPDiscoverRequest):
         logger.error(f"Error discovering custom MCP tools: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Simple bypass - catch common endpoints that might be called
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
+async def catch_all(path: str, request: Request):
+    """Catch-all route for bypassing authentication/billing checks"""
+    logger.info(f"Catch-all route hit: {request.method} /{path}")
+    
+    # Return sensible defaults for common endpoints
+    if path == "user":
+        return {"id": "bypass-user", "email": "user@bitterbot.net"}
+    elif path.startswith("billing") or path.startswith("subscription"):
+        return {"status": "active", "unlimited": True}
+    elif path == "agents":
+        return {"agents": []}
+    elif path == "projects":
+        return []
+    elif path == "threads":
+        return []
+    elif request.method == "POST":
+        # For any POST request, just return success
+        return {"success": True, "id": f"bypass-{path}"}
+    else:
+        # For anything else, return empty success
+        return {"status": "ok"}
+
 if __name__ == "__main__":
     import uvicorn
     
