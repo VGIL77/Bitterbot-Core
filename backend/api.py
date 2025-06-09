@@ -168,6 +168,22 @@ async def discover_custom_mcp_tools(request: CustomMCPDiscoverRequest):
         logger.error(f"Error discovering custom MCP tools: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/subscription")
+async def get_subscription():
+    return {"status": "active", "type": "premium", "unlimited": True}
+
+@app.get("/api/agents")
+async def get_agents():
+    return {"agents": []}
+
+@app.get("/api/available-models")
+async def get_models():
+    return {"models": ["claude-3-opus", "gpt-4"]}
+
+@app.post("/api/initiate-agent")
+async def initiate_agent():
+    return {"agent_id": "bitter-bot-1", "status": "ready"}
+
 if __name__ == "__main__":
     import uvicorn
     
