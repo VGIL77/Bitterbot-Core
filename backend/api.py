@@ -214,6 +214,19 @@ async def catch_all(path: str, request: Request):
     """Catch-all route for missing endpoints only"""
     logger.warning(f"Catch-all route hit (unhandled endpoint): {request.method} /{path}")
     
+    # Special handling for agent initiation
+    if path == "agent/initiate" and request.method == "POST":
+        import uuid
+        thread_id = f"thread-{uuid.uuid4()}"
+        agent_id = f"agent-{uuid.uuid4()}"
+        
+        return {
+            "thread_id": thread_id,
+            "agent_id": agent_id,
+            "status": "ready",
+            "message": "BitterBot ready to assist! 🚀"
+        }
+    
     # Log the full request details to help debug
     try:
         body = await request.body()
