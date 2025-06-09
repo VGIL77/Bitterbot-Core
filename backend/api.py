@@ -180,12 +180,32 @@ async def get_models():
 async def get_builder_history(agent_id: str):
     return {"history": []}
 
-@app.get("/api/agents")
+@app.get("/agents")
 async def get_agents():
     return {"agents": []}
 
-@app.post("/api/initiate-agent")
+@app.get("/thread/{thread_id}/agent-runs")
+async def get_agent_runs(thread_id: str):
+    return {"runs": []}
+
+@app.get("/billing/check-status")
+async def check_billing():
+    return {"status": "active", "can_use_features": True}
+
+@app.post("/project/{project_id}/sandbox/ensure-active")
+async def ensure_sandbox(project_id: str):
+    return {"active": True}
+
+@app.post("/agent/initiate")
 async def initiate_agent():
+    return {"agent_id": "mock-agent", "thread_id": "mock-thread"}
+
+@app.get("/api/agents")
+async def get_agents_api():
+    return {"agents": []}
+
+@app.post("/api/initiate-agent")
+async def initiate_agent_api():
     return {"agent_id": "bitter-bot-1", "status": "ready"}
 
 if __name__ == "__main__":
