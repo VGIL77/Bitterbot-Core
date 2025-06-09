@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "suna"
+name = "Bitterbot"
 version = "1.0"
 description = "open source generalist AI Agent"
 authors = ["VMG <vgil@soapbox.net>"]
