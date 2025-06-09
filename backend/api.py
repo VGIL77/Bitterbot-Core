@@ -13,6 +13,8 @@ from utils.logger import logger
 import time
 from collections import OrderedDict
 from typing import Dict, Any
+from anthropic import Anthropic
+import os
 
 from pydantic import BaseModel
 # Import the agent API module
@@ -31,6 +33,9 @@ if sys.platform == "win32":
 # Initialize managers
 db = DBConnection()
 instance_id = "single"
+
+# Initialize Claude
+anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 # Rate limiter state
 ip_tracker = OrderedDict()
@@ -170,7 +175,17 @@ async def discover_custom_mcp_tools(request: CustomMCPDiscoverRequest):
 
 @app.get("/billing/subscription")
 async def get_subscription():
-    return {"status": "active", "type": "premium", "unlimited": True}
+    return {
+        "status": "active",
+        "type": "TRUST_FUND_UNLIMITED",
+        "limits": None,
+        "model_access": ["claude-opus-4", "claude-sonnet-4", "all-the-models"],
+        "features": {
+            "unlimited_messages": True,
+            "priority_access": True,
+            "purple_mode": "MAXIMUM"
+        }
+    }
 
 @app.get("/billing/available-models")
 async def get_models():
@@ -197,8 +212,34 @@ async def ensure_sandbox(project_id: str):
     return {"active": True}
 
 @app.post("/agent/initiate")
-async def initiate_agent():
-    return {"agent_id": "mock-agent", "thread_id": "mock-thread"}
+async def initiate_agent(request: Request):
+    data = await request.json()
+    prompt = data.get('prompt', 'Hello')
+    
+    try:
+        # REAL CLAUDE OPUS 4 CALL!
+        response = anthropic.messages.create(
+            model="claude-opus-4-20250514",  # FULL POWER OPUS 4!
+            max_tokens=4096,
+            temperature=0.7,
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }]
+        )
+        
+        return {
+            "agent_id": "bitter-bot-opus",
+            "thread_id": f"thread-{int(time.time())}",
+            "response": response.content[0].text,
+            "model": "claude-opus-4-maximum-purple"
+        }
+    except Exception as e:
+        return {
+            "agent_id": "error",
+            "thread_id": "error",
+            "response": f"Error calling Claude: {str(e)}"
+        }
 
 @app.get("/api/agents")
 async def get_agents_api():
