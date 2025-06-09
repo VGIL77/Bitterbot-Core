@@ -13,8 +13,6 @@ from utils.logger import logger
 import time
 from collections import OrderedDict
 from typing import Dict, Any
-from litellm import completion
-import os
 
 from pydantic import BaseModel
 # Import the agent API module
@@ -34,7 +32,6 @@ if sys.platform == "win32":
 db = DBConnection()
 instance_id = "single"
 
-# Claude is initialized via LiteLLM - no need for direct Anthropic client
 
 # Rate limiter state
 ip_tracker = OrderedDict()
@@ -88,33 +85,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Define allowed origins based on environment
-allowed_origins = [
-    "https://www.suna.so",
-    "https://suna.so",
-    "https://bitterbot.net",
-    "https://www.bitterbot.net",
-    "http://localhost:3000",
-    "http://localhost:3001"  # Added for good measure
-]
-allow_origin_regex = None
-
-# Add staging-specific origins
-if config.ENV_MODE == EnvMode.STAGING:
-    allowed_origins.append("https://staging.suna.so")
-    # Updated regex to include both suna and bitterbot Vercel preview URLs
-    allow_origin_regex = r"https://(suna|bitterbot)-.*-.*\.vercel\.app"
-
-# CORS MUST BE FIRST!
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_origin_regex=allow_origin_regex,
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow ALL methods
-    allow_headers=["*"],  # Allow ALL headers
-)
-
 @app.middleware("http")
 async def log_requests_middleware(request: Request, call_next):
     start_time = time.time()
@@ -137,58 +107,30 @@ async def log_requests_middleware(request: Request, call_next):
         logger.error(f"Request failed: {method} {path} | Error: {str(e)} | Time: {process_time:.2f}s")
         raise
 
-# CORS configuration already added above (right after app initialization)
+# Define allowed origins based on environment
+allowed_origins = [
+    "https://www.suna.so",
+    "https://suna.so",
+    "https://bitterbot.net",
+    "https://www.bitterbot.net",
+    "http://localhost:3000"
+]
+allow_origin_regex = None
 
-# Add OPTIONS handler for preflight requests
-@app.options("/{full_path:path}")
-async def options_handler(full_path: str):
-    return JSONResponse(content={}, headers={
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "*",
-        "Access-Control-Allow-Headers": "*",
-    })
+# Add staging-specific origins
+if config.ENV_MODE == EnvMode.STAGING:
+    allowed_origins.append("https://staging.suna.so")
+    # Updated regex to include both suna and bitterbot Vercel preview URLs
+    allow_origin_regex = r"https://(suna|bitterbot)-.*-.*\.vercel\.app"
 
-# Define our custom endpoints BEFORE including routers
-@app.post("/agent/initiate")
-async def initiate_agent(request: Request):
-    data = await request.json()
-    prompt = data.get('prompt', 'Hello')
-    
-    try:
-        # 🔥 CLAUDE OPUS 4 VIA LITELLM 🔥
-        response = completion(
-            model="claude-opus-4-20250514",  # THE NEWEST MODEL!
-            messages=[{
-                "role": "user", 
-                "content": prompt
-            }],
-            api_key=os.getenv("ANTHROPIC_API_KEY"),
-            max_tokens=4096,  # DOUBLE THE TOKENS!
-            temperature=0.8,   # More creative
-            # LiteLLM passes these through to Anthropic:
-            top_p=0.95,
-            metadata={
-                "user": "trust_fund_victor",
-                "mode": "MAXIMUM_PURPLE"
-            }
-        )
-        
-        return {
-            "agent_id": "bitter-bot-opus-4",
-            "thread_id": f"thread-{int(time.time())}",
-            "response": response.choices[0].message.content,
-            "model": "claude-opus-4-20250514",
-            "tokens": response.usage.total_tokens if hasattr(response.usage, 'total_tokens') else "UNLIMITED",
-            "cost": f"${(response.usage.total_tokens * 0.00015):.2f}" if hasattr(response.usage, 'total_tokens') else "$$",
-            "powered_by": "LiteLLM + Trust Fund Particles™"
-        }
-    except Exception as e:
-        return {
-            "agent_id": "error",
-            "thread_id": "error", 
-            "response": f"Error calling Claude Opus 4: {str(e)}",
-            "suggestion": "Check if ANTHROPIC_API_KEY is set and has Opus 4 access"
-        }
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_origin_regex=allow_origin_regex,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
 
 app.include_router(agent_api.router, prefix="/api")
 
@@ -227,7 +169,6 @@ async def discover_custom_mcp_tools(request: CustomMCPDiscoverRequest):
         logger.error(f"Error discovering custom MCP tools: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-<<<<<<< HEAD
 # Simple bypass - catch common endpoints that might be called
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
 async def catch_all(path: str, request: Request):
@@ -251,65 +192,6 @@ async def catch_all(path: str, request: Request):
     else:
         # For anything else, return empty success
         return {"status": "ok"}
-=======
-@app.get("/billing/subscription")
-async def get_subscription():
-    return {
-        "status": "active",
-        "type": "TRUST_FUND_UNLIMITED",
-        "limits": None,
-        "model_access": ["claude-opus-4", "claude-sonnet-4", "all-the-models"],
-        "features": {
-            "unlimited_messages": True,
-            "priority_access": True,
-            "purple_mode": "MAXIMUM"
-        }
-    }
-
-@app.get("/billing/available-models")
-async def get_models():
-    return {"models": ["claude-3-opus", "gpt-4"]}
-
-@app.get("/agents/{agent_id}/builder-chat-history")
-async def get_builder_history(agent_id: str):
-    return {"history": []}
-
-@app.get("/agents")
-async def get_agents():
-    return {"agents": []}
-
-@app.get("/thread/{thread_id}/agent-runs")
-async def get_agent_runs(thread_id: str):
-    return {"runs": []}
-
-@app.get("/billing/check-status")
-async def check_billing():
-    return {"status": "active", "can_use_features": True}
-
-@app.post("/project/{project_id}/sandbox/ensure-active")
-async def ensure_sandbox(project_id: str):
-    return {"active": True}
-
-@app.get("/api/agents")
-async def get_agents_api():
-    return {"agents": []}
-
-@app.post("/api/initiate-agent")
-async def initiate_agent_api():
-    return {"agent_id": "bitter-bot-1", "status": "ready"}
-
-@app.get("/user")
-async def get_user():
-    return {"id": "mock-user", "email": "bitter@bot.com"}
-
-@app.get("/projects")
-async def get_projects():
-    return []  # Empty projects for now
-
-@app.get("/threads")
-async def get_threads():
-    return []  # Empty threads
->>>>>>> ccedfdd4f1079fda2f1a372ee552120d25ee4a54
 
 if __name__ == "__main__":
     import uvicorn
