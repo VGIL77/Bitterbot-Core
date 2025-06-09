@@ -217,14 +217,29 @@ async def catch_all(path: str, request: Request):
     # Special handling for agent initiation
     if path == "agent/initiate" and request.method == "POST":
         import uuid
-        thread_id = f"thread-{uuid.uuid4()}"
-        agent_id = f"agent-{uuid.uuid4()}"
+        from supabase import create_client
+        import os
+        
+        thread_id = str(uuid.uuid4())
+        project_id = str(uuid.uuid4())
+        
+        # Need to INSERT into Supabase!
+        supabase = create_client(
+            os.getenv("SUPABASE_URL"),
+            os.getenv("SUPABASE_SERVICE_KEY")
+        )
+        
+        # Create the thread
+        supabase.table("threads").insert({
+            "id": thread_id,
+            "account_id": "6e650c1a-44bf-4ab3-bc49-10e7f6e34264",  # Your account
+            "project_id": project_id
+        }).execute()
         
         return {
             "thread_id": thread_id,
-            "agent_id": agent_id,
-            "status": "ready",
-            "message": "BitterBot ready to assist! 🚀"
+            "agent_id": f"agent-{uuid.uuid4()}",
+            "status": "ready"
         }
     
     # Log the full request details to help debug
