@@ -169,7 +169,15 @@ async def discover_custom_mcp_tools(request: CustomMCPDiscoverRequest):
         logger.error(f"Error discovering custom MCP tools: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Removed the bypass endpoint - let the real /api/agent/initiate handle it
+# Override the JWT authentication dependency to always return a test user
+from agent.api import get_current_user_id_from_jwt
+
+async def fake_get_current_user_id_from_jwt():
+    """Bypass JWT auth - always return test user"""
+    return "test-user-123"
+
+# Override the dependency
+app.dependency_overrides[get_current_user_id_from_jwt] = fake_get_current_user_id_from_jwt
 
 # Add auth endpoints that the real agent/initiate might check
 @app.get("/user")
