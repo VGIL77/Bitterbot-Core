@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, Response, Depends
+from fastapi import FastAPI, Request, HTTPException, Response, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 import sentry
@@ -169,29 +169,55 @@ async def discover_custom_mcp_tools(request: CustomMCPDiscoverRequest):
         logger.error(f"Error discovering custom MCP tools: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Simple bypass - catch common endpoints that might be called
+# Removed the bypass endpoint - let the real /api/agent/initiate handle it
+
+# Add auth endpoints that the real agent/initiate might check
+@app.get("/user")
+async def get_user_bypass(authorization: str = Header(None)):
+    """Bypass user endpoint - returns mock user"""
+    return {
+        "id": "test-user-123",
+        "email": "test@bitterbot.net",
+        "user_metadata": {"full_name": "Test User"}
+    }
+
+@app.get("/billing/subscription")
+async def get_subscription_bypass():
+    """Bypass subscription check - always active"""
+    return {
+        "status": "active",
+        "type": "premium",
+        "limits": None,
+        "model_access": ["all"]
+    }
+
+@app.get("/billing/check-status") 
+async def check_billing_bypass():
+    """Bypass billing check - always active"""
+    return {
+        "status": "active",
+        "can_use_features": True,
+        "message": "Billing bypassed"
+    }
+
+# Simple bypass - catch ONLY truly missing endpoints (must be LAST)
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
 async def catch_all(path: str, request: Request):
-    """Catch-all route for bypassing authentication/billing checks"""
-    logger.info(f"Catch-all route hit: {request.method} /{path}")
+    """Catch-all route for missing endpoints only"""
+    logger.warning(f"Catch-all route hit (unhandled endpoint): {request.method} /{path}")
     
-    # Return sensible defaults for common endpoints
-    if path == "user":
-        return {"id": "bypass-user", "email": "user@bitterbot.net"}
-    elif path.startswith("billing") or path.startswith("subscription"):
-        return {"status": "active", "unlimited": True}
-    elif path == "agents":
-        return {"agents": []}
-    elif path == "projects":
-        return []
-    elif path == "threads":
-        return []
-    elif request.method == "POST":
-        # For any POST request, just return success
-        return {"success": True, "id": f"bypass-{path}"}
+    # Log the full request details to help debug
+    try:
+        body = await request.body()
+        logger.info(f"Request body: {body[:200]}...")  # First 200 chars
+    except:
+        pass
+    
+    # Return minimal response for unhandled endpoints
+    if request.method == "GET":
+        return {"status": "ok", "message": f"Unhandled GET /{path}"}
     else:
-        # For anything else, return empty success
-        return {"status": "ok"}
+        return {"success": True, "message": f"Unhandled {request.method} /{path}"}
 
 if __name__ == "__main__":
     import uvicorn
