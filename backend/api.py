@@ -13,7 +13,7 @@ from utils.logger import logger
 import time
 from collections import OrderedDict
 from typing import Dict, Any
-from anthropic import Anthropic
+from litellm import completion
 import os
 
 from pydantic import BaseModel
@@ -34,8 +34,7 @@ if sys.platform == "win32":
 db = DBConnection()
 instance_id = "single"
 
-# Initialize Claude
-anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+# Claude is initialized via LiteLLM - no need for direct Anthropic client
 
 # Rate limiter state
 ip_tracker = OrderedDict()
@@ -217,28 +216,39 @@ async def initiate_agent(request: Request):
     prompt = data.get('prompt', 'Hello')
     
     try:
-        # REAL CLAUDE OPUS 4 CALL!
-        response = anthropic.messages.create(
-            model="claude-opus-4-20250514",  # FULL POWER OPUS 4!
-            max_tokens=4096,
-            temperature=0.7,
+        # 🔥 CLAUDE OPUS 4 VIA LITELLM 🔥
+        response = completion(
+            model="claude-opus-4-20250514",  # THE NEWEST MODEL!
             messages=[{
-                "role": "user",
+                "role": "user", 
                 "content": prompt
-            }]
+            }],
+            api_key=os.getenv("ANTHROPIC_API_KEY"),
+            max_tokens=4096,  # DOUBLE THE TOKENS!
+            temperature=0.8,   # More creative
+            # LiteLLM passes these through to Anthropic:
+            top_p=0.95,
+            metadata={
+                "user": "trust_fund_victor",
+                "mode": "MAXIMUM_PURPLE"
+            }
         )
         
         return {
-            "agent_id": "bitter-bot-opus",
+            "agent_id": "bitter-bot-opus-4",
             "thread_id": f"thread-{int(time.time())}",
-            "response": response.content[0].text,
-            "model": "claude-opus-4-maximum-purple"
+            "response": response.choices[0].message.content,
+            "model": "claude-opus-4-20250514",
+            "tokens": response.usage.total_tokens if hasattr(response.usage, 'total_tokens') else "UNLIMITED",
+            "cost": f"${(response.usage.total_tokens * 0.00015):.2f}" if hasattr(response.usage, 'total_tokens') else "$$",
+            "powered_by": "LiteLLM + Trust Fund Particles™"
         }
     except Exception as e:
         return {
             "agent_id": "error",
-            "thread_id": "error",
-            "response": f"Error calling Claude: {str(e)}"
+            "thread_id": "error", 
+            "response": f"Error calling Claude Opus 4: {str(e)}",
+            "suggestion": "Check if ANTHROPIC_API_KEY is set and has Opus 4 access"
         }
 
 @app.get("/api/agents")
