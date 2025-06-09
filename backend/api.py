@@ -139,6 +139,57 @@ async def log_requests_middleware(request: Request, call_next):
 
 # CORS configuration already added above (right after app initialization)
 
+# Add OPTIONS handler for preflight requests
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    return JSONResponse(content={}, headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "*",
+        "Access-Control-Allow-Headers": "*",
+    })
+
+# Define our custom endpoints BEFORE including routers
+@app.post("/agent/initiate")
+async def initiate_agent(request: Request):
+    data = await request.json()
+    prompt = data.get('prompt', 'Hello')
+    
+    try:
+        # 🔥 CLAUDE OPUS 4 VIA LITELLM 🔥
+        response = completion(
+            model="claude-opus-4-20250514",  # THE NEWEST MODEL!
+            messages=[{
+                "role": "user", 
+                "content": prompt
+            }],
+            api_key=os.getenv("ANTHROPIC_API_KEY"),
+            max_tokens=4096,  # DOUBLE THE TOKENS!
+            temperature=0.8,   # More creative
+            # LiteLLM passes these through to Anthropic:
+            top_p=0.95,
+            metadata={
+                "user": "trust_fund_victor",
+                "mode": "MAXIMUM_PURPLE"
+            }
+        )
+        
+        return {
+            "agent_id": "bitter-bot-opus-4",
+            "thread_id": f"thread-{int(time.time())}",
+            "response": response.choices[0].message.content,
+            "model": "claude-opus-4-20250514",
+            "tokens": response.usage.total_tokens if hasattr(response.usage, 'total_tokens') else "UNLIMITED",
+            "cost": f"${(response.usage.total_tokens * 0.00015):.2f}" if hasattr(response.usage, 'total_tokens') else "$$",
+            "powered_by": "LiteLLM + Trust Fund Particles™"
+        }
+    except Exception as e:
+        return {
+            "agent_id": "error",
+            "thread_id": "error", 
+            "response": f"Error calling Claude Opus 4: {str(e)}",
+            "suggestion": "Check if ANTHROPIC_API_KEY is set and has Opus 4 access"
+        }
+
 app.include_router(agent_api.router, prefix="/api")
 
 app.include_router(sandbox_api.router, prefix="/api")
@@ -213,47 +264,6 @@ async def check_billing():
 @app.post("/project/{project_id}/sandbox/ensure-active")
 async def ensure_sandbox(project_id: str):
     return {"active": True}
-
-@app.post("/agent/initiate")
-async def initiate_agent(request: Request):
-    data = await request.json()
-    prompt = data.get('prompt', 'Hello')
-    
-    try:
-        # 🔥 CLAUDE OPUS 4 VIA LITELLM 🔥
-        response = completion(
-            model="claude-opus-4-20250514",  # THE NEWEST MODEL!
-            messages=[{
-                "role": "user", 
-                "content": prompt
-            }],
-            api_key=os.getenv("ANTHROPIC_API_KEY"),
-            max_tokens=4096,  # DOUBLE THE TOKENS!
-            temperature=0.8,   # More creative
-            # LiteLLM passes these through to Anthropic:
-            top_p=0.95,
-            metadata={
-                "user": "trust_fund_victor",
-                "mode": "MAXIMUM_PURPLE"
-            }
-        )
-        
-        return {
-            "agent_id": "bitter-bot-opus-4",
-            "thread_id": f"thread-{int(time.time())}",
-            "response": response.choices[0].message.content,
-            "model": "claude-opus-4-20250514",
-            "tokens": response.usage.total_tokens if hasattr(response.usage, 'total_tokens') else "UNLIMITED",
-            "cost": f"${(response.usage.total_tokens * 0.00015):.2f}" if hasattr(response.usage, 'total_tokens') else "$$",
-            "powered_by": "LiteLLM + Trust Fund Particles™"
-        }
-    except Exception as e:
-        return {
-            "agent_id": "error",
-            "thread_id": "error", 
-            "response": f"Error calling Claude Opus 4: {str(e)}",
-            "suggestion": "Check if ANTHROPIC_API_KEY is set and has Opus 4 access"
-        }
 
 @app.get("/api/agents")
 async def get_agents_api():
