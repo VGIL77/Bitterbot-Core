@@ -292,7 +292,7 @@
   border: 1px solid var(--bb-dark-border) !important;
 }
 
-/* Tool panel header - Replace "Suna" with "BitterBot" */
+/* Tool panel header - "BitterBot" */
 .bitterbot-theme .tool-panel-header::after {
   content: "BitterBot's Computer";
   position: absolute;

@@ -1,4 +1,4 @@
-# Suna frontend
+# Bitterbot frontend
 
 ## Getting Started
 

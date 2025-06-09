@@ -47,7 +47,7 @@ export function AgentSelector({
 
   const displayName = currentAgent?.name || defaultAgent?.name || 'BitterBot';
   const agentAvatar = currentAgent?.avatar;
-  const isUsingSuna = !currentAgent && !defaultAgent;
+  const isUsingBitterbot = !currentAgent && !defaultAgent;
 
   const handleAgentSelect = (agentId: string | undefined) => {
     onAgentSelect?.(agentId);
@@ -143,7 +143,7 @@ export function AgentSelector({
                       Default
                     </Badge>
                   </div>
-                  {isUsingSuna && (
+                  {isUsingBitterbot && (
                     <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
                   )}
                 </div>
@@ -206,7 +206,7 @@ export function AgentSelector({
               className="flex items-center gap-2 px-3 py-2 h-auto min-w-[200px] justify-between"
             >
               <div className="flex items-center gap-2">
-                {isUsingSuna ? (
+                {isUsingBitterbot ? (
                   <User className="h-4 w-4 text-muted-foreground" />
                 ) : (
                   <Bot className="h-4 w-4 text-muted-foreground" />
@@ -216,7 +216,7 @@ export function AgentSelector({
                     <span className="text-sm font-medium">
                       {displayName}
                     </span>
-                    {isUsingSuna && (
+                    {isUsingBitterbot && (
                       <Badge variant="outline" className="text-xs px-1 py-0">
                         Default
                       </Badge>
@@ -232,7 +232,7 @@ export function AgentSelector({
                     <span className="text-xs text-muted-foreground line-clamp-1 max-w-[150px]">
                       {currentAgent.description}
                     </span>
-                  ) : isUsingSuna ? (
+                  ) : isUsingBitterbot ? (
                     <span className="text-xs text-muted-foreground line-clamp-1 max-w-[150px]">
                       Your personal AI employee
                     </span>
@@ -251,12 +251,12 @@ export function AgentSelector({
               <div className="flex items-center gap-2 w-full">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <div className="flex items-center gap-1 flex-1">
-                  <span className="font-medium">Suna</span>
+                  <span className="font-medium">Bitterbot</span>
                   <Badge variant="outline" className="text-xs px-1 py-0">
                     Default
                   </Badge>
                 </div>
-                {isUsingSuna && (
+                {isUsingBitterbot && (
                   <div className="h-2 w-2 rounded-full bg-primary" />
                 )}
               </div>

@@ -1,4 +1,4 @@
-# Suna Backend
+# Bitterbot Backend
 
 ## Running the backend
 

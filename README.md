@@ -104,7 +104,7 @@ You'll need the following components:
 1. **Clone the repository**:
 
 ```bash
-git clone https://github.com/Bitterbot-AI/Bitterbot_Dev
+git clone https://github.com/VGIL77/Bitterbot-Core
 cd Bitterbot_Dev
 
 2. **Configure backend environment**:

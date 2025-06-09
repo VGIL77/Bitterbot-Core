@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, Response, Depends, Header
+from fastapi import FastAPI, Request, HTTPException, Response, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 import sentry
@@ -169,91 +169,7 @@ async def discover_custom_mcp_tools(request: CustomMCPDiscoverRequest):
         logger.error(f"Error discovering custom MCP tools: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Override the JWT authentication dependency to always return a test user
-from agent.api import get_current_user_id_from_jwt
-
-async def fake_get_current_user_id_from_jwt():
-    """Bypass JWT auth - always return test user"""
-    return "test-user-123"
-
-# Override the dependency
-app.dependency_overrides[get_current_user_id_from_jwt] = fake_get_current_user_id_from_jwt
-
-# Add auth endpoints that the real agent/initiate might check
-@app.get("/user")
-async def get_user_bypass(authorization: str = Header(None)):
-    """Bypass user endpoint - returns mock user"""
-    return {
-        "id": "test-user-123",
-        "email": "test@bitterbot.net",
-        "user_metadata": {"full_name": "Test User"}
-    }
-
-@app.get("/billing/subscription")
-async def get_subscription_bypass():
-    """Bypass subscription check - always active"""
-    return {
-        "status": "active",
-        "type": "premium",
-        "limits": None,
-        "model_access": ["all"]
-    }
-
-@app.get("/billing/check-status") 
-async def check_billing_bypass():
-    """Bypass billing check - always active"""
-    return {
-        "status": "active",
-        "can_use_features": True,
-        "message": "Billing bypassed"
-    }
-
-# Simple bypass - catch ONLY truly missing endpoints (must be LAST)
-@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
-async def catch_all(path: str, request: Request):
-    """Catch-all route for missing endpoints only"""
-    logger.warning(f"Catch-all route hit (unhandled endpoint): {request.method} /{path}")
-    
-    # Special handling for agent initiation
-    if path == "agent/initiate" and request.method == "POST":
-        import uuid
-        from supabase import create_client
-        import os
-        
-        thread_id = str(uuid.uuid4())
-        project_id = str(uuid.uuid4())
-        
-        # Need to INSERT into Supabase!
-        supabase = create_client(
-            os.getenv("SUPABASE_URL"),
-            os.getenv("SUPABASE_SERVICE_KEY")
-        )
-        
-        # Create the thread
-        supabase.table("threads").insert({
-            "id": thread_id,
-            "account_id": "6e650c1a-44bf-4ab3-bc49-10e7f6e34264",  # Your account
-            "project_id": project_id
-        }).execute()
-        
-        return {
-            "thread_id": thread_id,
-            "agent_id": f"agent-{uuid.uuid4()}",
-            "status": "ready"
-        }
-    
-    # Log the full request details to help debug
-    try:
-        body = await request.body()
-        logger.info(f"Request body: {body[:200]}...")  # First 200 chars
-    except:
-        pass
-    
-    # Return minimal response for unhandled endpoints
-    if request.method == "GET":
-        return {"status": "ok", "message": f"Unhandled GET /{path}"}
-    else:
-        return {"success": True, "message": f"Unhandled {request.method} /{path}"}
+# All bypass code removed - using user tier system instead
 
 if __name__ == "__main__":
     import uvicorn

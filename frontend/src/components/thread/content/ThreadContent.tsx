@@ -278,7 +278,7 @@ export const ThreadContent: React.FC<ThreadContentProps> = ({
     project,
     debugMode = false,
     isPreviewMode = false,
-    agentName = 'Suna',
+    agentName = 'Bitterbot',
     agentAvatar = <BitterBotAvatar size={24} variant="brain" />,
     emptyStateComponent,
 }) => {

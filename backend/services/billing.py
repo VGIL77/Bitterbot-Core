@@ -1,5 +1,5 @@
 """
-Stripe Billing API implementation for Suna on top of Basejump. ONLY HAS SUPPOT FOR USER ACCOUNTS – no team accounts. As we are using the user_id as account_id as is the case with personal accounts. In personal accounts, the account_id equals the user_id. In team accounts, the account_id is unique.
+Stripe Billing API implementation for Bitterbot on top of Basejump. ONLY HAS SUPPOT FOR USER ACCOUNTS – no team accounts. As we are using the user_id as account_id as is the case with personal accounts. In personal accounts, the account_id equals the user_id. In team accounts, the account_id is unique.
 
 stripe listen --forward-to localhost:8000/api/billing/webhook
 """
@@ -206,6 +206,20 @@ async def get_allowed_models_for_user(client, user_id: str):
     Returns:
         List of model names allowed for the user's subscription tier.
     """
+    # Check for privileged user tiers first
+    PRIVILEGED_TIERS = ['creator', 'tester', 'vip', 'investor']
+    try:
+        result = await client.table('profiles').select('user_tier').eq('id', user_id).single()
+        user_tier = result.data.get('user_tier', 'free') if result.data else 'free'
+        
+        if user_tier in PRIVILEGED_TIERS:
+            # Return all available models for privileged users
+            all_models = set()
+            for tier_models in MODEL_ACCESS_TIERS.values():
+                all_models.update(tier_models)
+            return list(all_models)
+    except Exception as e:
+        logger.warning(f"Error checking user tier: {e}")
 
     subscription = await get_user_subscription(user_id)
     tier_name = 'free'
@@ -256,6 +270,24 @@ async def check_billing_status(client, user_id: str) -> Tuple[bool, str, Optiona
             "plan_name": "Local Development",
             "minutes_limit": "no limit"
         }
+    
+    # Check for privileged user tiers
+    PRIVILEGED_TIERS = ['creator', 'tester', 'vip', 'investor']
+    try:
+        result = await client.table('profiles').select('user_tier').eq('id', user_id).single()
+        user_tier = result.data.get('user_tier', 'free') if result.data else 'free'
+        
+        if user_tier in PRIVILEGED_TIERS:
+            logger.info(f"User {user_id} has privileged tier: {user_tier} - bypassing billing")
+            return True, f"Privileged {user_tier} tier - unlimited access", {
+                "price_id": f"tier_{user_tier}",
+                "plan_name": user_tier.title(),
+                "minutes_limit": "unlimited",
+                "tier": user_tier
+            }
+    except Exception as e:
+        logger.warning(f"Error checking user tier: {e}")
+        # Continue with normal billing flow if tier check fails
     
     # Get current subscription
     subscription = await get_user_subscription(user_id)

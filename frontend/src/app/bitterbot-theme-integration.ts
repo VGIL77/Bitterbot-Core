@@ -5,14 +5,14 @@ export function initBitterBotTheme() {
   if (typeof document !== 'undefined') {
     document.body.classList.add('bitterbot-theme');
     
-    // Replace "Suna" text with "BitterBot" throughout the dashboard
-    const replaceSunaText = () => {
+    // Replace "Bitterbot" text with "BitterBot" throughout the dashboard
+    const replaceBitterbotText = () => {
       const walker = document.createTreeWalker(
         document.body,
         NodeFilter.SHOW_TEXT,
         {
           acceptNode: (node) => {
-            if (node.nodeValue?.includes('Suna')) {
+            if (node.nodeValue?.includes('Bitterbot')) {
               return NodeFilter.FILTER_ACCEPT;
             }
             return NodeFilter.FILTER_SKIP;
@@ -28,19 +28,19 @@ export function initBitterBotTheme() {
 
       nodesToReplace.forEach(node => {
         if (node.nodeValue) {
-          node.nodeValue = node.nodeValue.replace(/Suna/g, 'BitterBot');
+          node.nodeValue = node.nodeValue.replace(/Bitterbot/g, 'BitterBot');
         }
       });
     };
 
     // Replace text on initial load
-    replaceSunaText();
+    replaceBitterbotText();
 
     // Watch for dynamic content changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList') {
-          replaceSunaText();
+          replaceBitterbotText();
         }
       });
     });
