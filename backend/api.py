@@ -88,6 +88,33 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# Define allowed origins based on environment
+allowed_origins = [
+    "https://www.suna.so",
+    "https://suna.so",
+    "https://bitterbot.net",
+    "https://www.bitterbot.net",
+    "http://localhost:3000",
+    "http://localhost:3001"  # Added for good measure
+]
+allow_origin_regex = None
+
+# Add staging-specific origins
+if config.ENV_MODE == EnvMode.STAGING:
+    allowed_origins.append("https://staging.suna.so")
+    # Updated regex to include both suna and bitterbot Vercel preview URLs
+    allow_origin_regex = r"https://(suna|bitterbot)-.*-.*\.vercel\.app"
+
+# CORS MUST BE FIRST!
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_origin_regex=allow_origin_regex,
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow ALL methods
+    allow_headers=["*"],  # Allow ALL headers
+)
+
 @app.middleware("http")
 async def log_requests_middleware(request: Request, call_next):
     start_time = time.time()
@@ -110,30 +137,7 @@ async def log_requests_middleware(request: Request, call_next):
         logger.error(f"Request failed: {method} {path} | Error: {str(e)} | Time: {process_time:.2f}s")
         raise
 
-# Define allowed origins based on environment
-allowed_origins = [
-    "https://www.suna.so",
-    "https://suna.so",
-    "https://bitterbot.net",
-    "https://www.bitterbot.net",
-    "http://localhost:3000"
-]
-allow_origin_regex = None
-
-# Add staging-specific origins
-if config.ENV_MODE == EnvMode.STAGING:
-    allowed_origins.append("https://staging.suna.so")
-    # Updated regex to include both suna and bitterbot Vercel preview URLs
-    allow_origin_regex = r"https://(suna|bitterbot)-.*-.*\.vercel\.app"
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_origin_regex=allow_origin_regex,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-)
+# CORS configuration already added above (right after app initialization)
 
 app.include_router(agent_api.router, prefix="/api")
 
