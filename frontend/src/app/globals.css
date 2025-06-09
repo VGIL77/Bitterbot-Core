@@ -296,6 +296,46 @@
   --sidebar-ring: oklch(0.439 0 0);
 }
 
+/* Custom colors for sidebar */
+:root {
+  --task-green-400: 74, 222, 128;
+  --task-green-500: 34, 197, 94;
+}
+
+.dark {
+  --task-green-400: 74, 222, 128;
+  --task-green-500: 34, 197, 94;
+}
+
+/* Task green utility classes */
+.text-task-green-400 {
+  color: rgb(var(--task-green-400));
+}
+
+.text-task-green-500 {
+  color: rgb(var(--task-green-500));
+}
+
+.border-task-green-500 {
+  border-color: rgb(var(--task-green-500));
+}
+
+.bg-task-green-500\/10 {
+  background-color: rgba(var(--task-green-500), 0.1);
+}
+
+.hover\:text-task-green-400:hover {
+  color: rgb(var(--task-green-400));
+}
+
+.hover\:bg-task-green-500\/10:hover {
+  background-color: rgba(var(--task-green-500), 0.1);
+}
+
+.hover\:shadow-task-green-500\/25:hover {
+  box-shadow: 0 10px 15px -3px rgba(var(--task-green-500), 0.25);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
