@@ -170,7 +170,7 @@ export function SidebarLeftNew({ isCollapsed = false, onToggle }: SidebarLeftNew
     const groups: { [key: string]: ThreadWithProject[] } = {};
     
     threads.forEach(thread => {
-      const dateKey = formatDate(thread.createdAt);
+      const dateKey = formatDate(thread.updatedAt);
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
@@ -610,10 +610,8 @@ export function SidebarLeftNew({ isCollapsed = false, onToggle }: SidebarLeftNew
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={confirmDelete}
-        itemName={threadToDelete?.name || ''}
+        threadName={threadToDelete?.name || ''}
         isDeleting={false}
-        progress={deleteProgress}
-        total={totalToDelete}
       />
     </>
   );

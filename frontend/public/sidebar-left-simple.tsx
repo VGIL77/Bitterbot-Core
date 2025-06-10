@@ -13,7 +13,7 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { useState } from 'react';
-import { cn } from '../lib/utils';
+import { cn } from '@/lib/utils';
 
 // BitterBot Brain Logo Component
 const BitterBotLogo = ({ className = "w-5 h-5" }: { className?: string }) => (

@@ -3,8 +3,7 @@
 import { createMutationHook } from "@/hooks/use-query";
 import { getProjects, getThreads, Project, Thread } from "@/lib/api";
 import { createQueryHook } from '@/hooks/use-query';
-import { threadKeys } from "./keys";
-import { projectKeys } from "./keys";
+import { threadKeys, projectKeys } from "./keys";
 import { deleteThread } from "../threads/utils";
 
 export const useProjects = createQueryHook(
@@ -87,6 +86,9 @@ export type ThreadWithProject = {
   projectName: string;
   url: string;
   updatedAt: string;
+  createdAt: string;
+  name: string;
+  preview?: string;
 };
 
 export const processThreadsWithProjects = (
@@ -118,6 +120,9 @@ export const processThreadsWithProjects = (
       url: `/agents/${thread.thread_id}`,
       updatedAt:
         thread.updated_at || project.updated_at || new Date().toISOString(),
+      createdAt: thread.created_at || new Date().toISOString(),
+      name: project.name || 'Unnamed Project',
+      preview: undefined, // Add this as threads don't have preview in current data structure
     });
   }
 
@@ -131,3 +136,6 @@ export const sortThreads = (
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 };
+
+// Export keys for use in other components
+export { threadKeys, projectKeys };
