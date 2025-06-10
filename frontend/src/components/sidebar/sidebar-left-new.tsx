@@ -16,7 +16,8 @@ import {
   X,
   History,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Plus
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
@@ -324,24 +325,21 @@ export function SidebarLeftNew({
         {/* Header */}
         <div className="p-4 border-b border-[hsl(262,20%,15%)]">
           <div className="flex items-center justify-between">
-            {!isCollapsed && (
-              <Link href="/dashboard" className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center">
-                  <BrainBBLogo className="w-8 h-8" />
-                </div>
-                <div>
+            <Link href="/dashboard" className="flex items-center gap-3 flex-1">
+              <div className={cn(
+                "flex items-center justify-center transition-all duration-300",
+                isCollapsed ? "w-full" : "w-8 h-8 -ml-1"
+              )}>
+                <BrainBBLogo className="w-8 h-8" />
+              </div>
+              {!isCollapsed && (
+                <div className="transition-all duration-300">
                   <h1 className="text-white font-semibold text-lg">
                     Bitter<span className="text-purple-400">Bot</span>
                   </h1>
                 </div>
-              </Link>
-            )}
-            
-            {isCollapsed && (
-              <Link href="/dashboard" className="w-8 h-8 flex items-center justify-center">
-                <BrainBBLogo className="w-8 h-8" />
-              </Link>
-            )}
+              )}
+            </Link>
             
             <Tooltip>
               <TooltipTrigger asChild>
@@ -360,15 +358,15 @@ export function SidebarLeftNew({
           {!isCollapsed && (
             <Link href="/dashboard">
               <button className="w-full mt-4 p-3 bg-transparent rounded-lg font-medium flex items-center justify-center transition-all duration-300 hover:scale-[1.02] relative overflow-hidden group">
-                <span className="relative z-10 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                <span className="relative z-10 bg-gradient-to-r from-purple-400 to-gray-300 bg-clip-text text-transparent">
                   New Conversation
                 </span>
                 {/* Animated gradient border */}
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient-x"></div>
-                {/* Inner background to create the outline effect */}
-                <div className="absolute inset-[2px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-[hsl(262,20%,10%)] transition-colors duration-300"></div>
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-gray-300 to-purple-500 animate-gradient-x"></div>
+                {/* Inner background to create the outline effect - thinner border with 1px */}
+                <div className="absolute inset-[1px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-[hsl(262,20%,10%)] transition-colors duration-300"></div>
                 {/* Glow effect on hover */}
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-300"></div>
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-gray-300 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
               </button>
             </Link>
           )}
@@ -376,15 +374,15 @@ export function SidebarLeftNew({
           {isCollapsed && (
             <Link href="/dashboard">
               <button className="w-full mt-4 p-2 bg-transparent rounded-lg transition-all duration-300 hover:scale-[1.02] relative overflow-hidden group">
-                <span className="relative z-10 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent text-sm font-medium">
-                  New
+                <span className="relative z-10 bg-gradient-to-r from-purple-400 to-gray-300 bg-clip-text text-transparent text-lg font-medium">
+                  <Plus className="w-5 h-5" />
                 </span>
                 {/* Animated gradient border */}
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient-x"></div>
-                {/* Inner background to create the outline effect */}
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-gray-300 to-purple-500 animate-gradient-x"></div>
+                {/* Inner background to create the outline effect - thinner border with 1px */}
                 <div className="absolute inset-[1px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-[hsl(262,20%,10%)] transition-colors duration-300"></div>
                 {/* Glow effect on hover */}
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 blur-md transition-opacity duration-300"></div>
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-gray-300 opacity-0 group-hover:opacity-20 blur-md transition-opacity duration-300"></div>
               </button>
             </Link>
           )}
