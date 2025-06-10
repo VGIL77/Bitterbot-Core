@@ -122,6 +122,9 @@ if config.ENV_MODE == EnvMode.STAGING:
     allowed_origins.append("https://staging.suna.so")
     # Updated regex to include both suna and bitterbot Vercel preview URLs
     allow_origin_regex = r"https://(suna|bitterbot)-.*-.*\.vercel\.app"
+elif config.ENV_MODE == EnvMode.PRODUCTION:
+    # Also allow Vercel preview URLs in production for development
+    allow_origin_regex = r"https://bitterbot-.*\.vercel\.app"
 
 app.add_middleware(
     CORSMiddleware,
