@@ -311,7 +311,7 @@ export function SidebarLeftNew({ isCollapsed = false, onToggle }: SidebarLeftNew
   return (
     <>
       <div
-        style={{ width: isCollapsed ? 60 : 280 }}
+        style={{ width: isCollapsed ? 60 : 320 }}
         className="h-screen bg-gradient-to-b from-[hsl(262,20%,8%)] to-[hsl(262,25%,6%)] border-r border-[hsl(262,20%,15%)] flex flex-col relative transition-all duration-300"
       >
         {/* Header */}
@@ -368,7 +368,7 @@ export function SidebarLeftNew({ isCollapsed = false, onToggle }: SidebarLeftNew
         </div>
 
         {/* Chat History */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scrollbar-hide">
           {threadsLoading || projectsLoading ? (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
