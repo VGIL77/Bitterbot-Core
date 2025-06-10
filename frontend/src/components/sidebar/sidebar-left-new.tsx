@@ -55,13 +55,20 @@ import {
 import { NavUserWithTeams } from './nav-user-with-teams';
 import { BrainBBLogo } from './brain-bb-logo';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Sidebar, useSidebar } from '@/components/ui/sidebar';
 
-interface SidebarLeftNewProps {
-  isCollapsed?: boolean;
-  onToggle?: () => void;
-}
-
-export function SidebarLeftNew({ isCollapsed = false, onToggle }: SidebarLeftNewProps) {
+export function SidebarLeftNew({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
+  const { state, setOpen, setOpenMobile } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+  const onToggle = () => {
+    if (state === 'expanded') {
+      setOpen(false);
+    } else {
+      setOpen(true);
+    }
+  };
   const [hoveredChat, setHoveredChat] = useState<string | null>(null);
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [selectedThreads, setSelectedThreads] = useState<Set<string>>(new Set());
@@ -310,10 +317,10 @@ export function SidebarLeftNew({ isCollapsed = false, onToggle }: SidebarLeftNew
 
   return (
     <>
-      <div
-        style={{ width: isCollapsed ? 60 : 380 }}
-        className="h-screen bg-gradient-to-b from-[hsl(262,20%,8%)] to-[hsl(262,25%,6%)] border-r border-[hsl(262,20%,15%)] flex flex-col relative transition-all duration-300"
-      >
+      <Sidebar collapsible="icon" {...props}>
+        <div
+          className="h-screen bg-gradient-to-b from-[hsl(262,20%,8%)] to-[hsl(262,25%,6%)] border-r border-[hsl(262,20%,15%)] flex flex-col relative"
+        >
         {/* Header */}
         <div className="p-4 border-b border-[hsl(262,20%,15%)]">
           <div className="flex items-center justify-between">
@@ -356,10 +363,12 @@ export function SidebarLeftNew({ isCollapsed = false, onToggle }: SidebarLeftNew
                 <span className="relative z-10 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   New Conversation
                 </span>
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 opacity-100 group-hover:opacity-0 transition-opacity duration-300"></div>
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300"></div>
-                <div className="absolute inset-[1px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-transparent transition-colors duration-300"></div>
-                <div className="absolute inset-0 rounded-lg animate-gradient-border"></div>
+                {/* Animated gradient border */}
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient-x"></div>
+                {/* Inner background to create the outline effect */}
+                <div className="absolute inset-[2px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-[hsl(262,20%,10%)] transition-colors duration-300"></div>
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-300"></div>
               </button>
             </Link>
           )}
@@ -370,8 +379,12 @@ export function SidebarLeftNew({ isCollapsed = false, onToggle }: SidebarLeftNew
                 <span className="relative z-10 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent text-sm font-medium">
                   New
                 </span>
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500"></div>
-                <div className="absolute inset-[1px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-transparent transition-colors duration-300"></div>
+                {/* Animated gradient border */}
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient-x"></div>
+                {/* Inner background to create the outline effect */}
+                <div className="absolute inset-[1px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-[hsl(262,20%,10%)] transition-colors duration-300"></div>
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 blur-md transition-opacity duration-300"></div>
               </button>
             </Link>
           )}
@@ -605,6 +618,7 @@ export function SidebarLeftNew({ isCollapsed = false, onToggle }: SidebarLeftNew
           <NavUserWithTeams user={user} />
         </div>
       </div>
+      </Sidebar>
 
       {/* Modals */}
       <ShareModal 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { SidebarLeft } from '@/components/sidebar/sidebar-left';
+import { SidebarLeftNew } from '@/components/sidebar/sidebar-left-new';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 // import { PricingAlert } from "@/components/billing/pricing-alert"
 import { MaintenanceAlert } from '@/components/maintenance-alert';
@@ -91,7 +91,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <DeleteOperationProvider>
       <SidebarProvider>
-        <SidebarLeft />
+        <SidebarLeftNew />
         <SidebarInset>
           <div className="bg-background">{children}</div>
         </SidebarInset>

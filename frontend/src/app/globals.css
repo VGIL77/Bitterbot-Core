@@ -223,6 +223,20 @@
         rotate(calc((var(--angle, 0) deg + 360deg) * -1));
     }
   }
+
+  @keyframes gradient-x {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  
+  --animate-gradient-x: gradient-x 3s ease infinite;
 }
 
 :root {
@@ -330,6 +344,12 @@
 
 .hover\:bg-task-green-500\/10:hover {
   background-color: rgba(var(--task-green-500), 0.1);
+}
+
+/* Animated gradient border */
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 3s ease infinite;
 }
 
 .hover\:shadow-task-green-500\/25:hover {
