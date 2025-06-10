@@ -49,7 +49,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ThreadWithProject } from '@/hooks/react-query/sidebar/use-sidebar';
 import { processThreadsWithProjects, useDeleteMultipleThreads, useDeleteThread, useProjects, useThreads } from '@/hooks/react-query/sidebar/use-sidebar';
 import { cn } from '@/lib/utils';
-import { threadKeys } from '@/hooks/react-query/threads/keys';
+import { threadKeys } from '@/hooks/react-query/sidebar/use-sidebar';
 
 interface ThreadGroup {
   label: string;
@@ -103,7 +103,7 @@ export function NavAgentsStyled() {
     const groups: { [key: string]: ThreadWithProject[] } = {};
     
     threads.forEach(thread => {
-      const dateKey = formatDate(thread.createdAt);
+      const dateKey = formatDate(thread.updatedAt);
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
@@ -463,10 +463,8 @@ export function NavAgentsStyled() {
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={confirmDelete}
-        itemName={threadToDelete?.name || ''}
+        threadName={threadToDelete?.name || ''}
         isDeleting={false}
-        progress={deleteProgress}
-        total={totalToDelete}
       />
     </>
   );
