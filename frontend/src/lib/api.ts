@@ -1465,7 +1465,7 @@ export const initiateAgent = async (
 
 export const checkApiHealth = async (): Promise<HealthCheckResponse> => {
   try {
-    const response = await fetch(`${API_URL}/api/health`, {
+    const response = await fetch(`${API_URL}/health`, {
       cache: 'no-store',
     });
 
