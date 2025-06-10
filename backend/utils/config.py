@@ -166,6 +166,9 @@ class Configuration:
     LANGFUSE_PUBLIC_KEY: Optional[str] = None
     LANGFUSE_SECRET_KEY: Optional[str] = None
     LANGFUSE_HOST: str = "https://cloud.langfuse.com"
+    
+    # Frontend configuration
+    FRONTEND_URL: str = "https://kortix.ai"
 
     @property
     def STRIPE_PRODUCT_ID(self) -> str:

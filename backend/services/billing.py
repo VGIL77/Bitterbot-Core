@@ -209,17 +209,25 @@ async def get_allowed_models_for_user(client, user_id: str):
     # Check for privileged user tiers first
     PRIVILEGED_TIERS = ['creator', 'tester', 'vip', 'investor']
     try:
+        logger.debug(f"get_allowed_models_for_user: Checking tier for user_id: {user_id}")
         result = await client.table('profiles').select('user_tier').eq('id', user_id).single()
-        user_tier = result.data.get('user_tier', 'free') if result.data else 'free'
+        
+        if result.data:
+            user_tier = result.data.get('user_tier', 'free')
+            logger.debug(f"get_allowed_models_for_user: User {user_id} has tier: {user_tier}")
+        else:
+            user_tier = 'free'
+            logger.debug(f"get_allowed_models_for_user: No profile found for user {user_id}, defaulting to 'free' tier")
         
         if user_tier in PRIVILEGED_TIERS:
+            logger.info(f"get_allowed_models_for_user: User {user_id} has privileged tier: {user_tier} - returning all models")
             # Return all available models for privileged users
             all_models = set()
             for tier_models in MODEL_ACCESS_TIERS.values():
                 all_models.update(tier_models)
             return list(all_models)
     except Exception as e:
-        logger.warning(f"Error checking user tier: {e}")
+        logger.error(f"get_allowed_models_for_user: Error checking user tier for {user_id}: {e}", exc_info=True)
 
     subscription = await get_user_subscription(user_id)
     tier_name = 'free'
@@ -274,8 +282,16 @@ async def check_billing_status(client, user_id: str) -> Tuple[bool, str, Optiona
     # Check for privileged user tiers
     PRIVILEGED_TIERS = ['creator', 'tester', 'vip', 'investor']
     try:
+        logger.debug(f"Checking user tier for user_id: {user_id}")
         result = await client.table('profiles').select('user_tier').eq('id', user_id).single()
-        user_tier = result.data.get('user_tier', 'free') if result.data else 'free'
+        logger.debug(f"Profile query result: {result}")
+        
+        if result.data:
+            user_tier = result.data.get('user_tier', 'free')
+            logger.info(f"User {user_id} has tier: {user_tier}")
+        else:
+            user_tier = 'free'
+            logger.warning(f"No profile found for user {user_id}, defaulting to 'free' tier")
         
         if user_tier in PRIVILEGED_TIERS:
             logger.info(f"User {user_id} has privileged tier: {user_tier} - bypassing billing")
@@ -285,8 +301,10 @@ async def check_billing_status(client, user_id: str) -> Tuple[bool, str, Optiona
                 "minutes_limit": "unlimited",
                 "tier": user_tier
             }
+        else:
+            logger.debug(f"User {user_id} has non-privileged tier: {user_tier}")
     except Exception as e:
-        logger.warning(f"Error checking user tier: {e}")
+        logger.error(f"Error checking user tier for {user_id}: {e}", exc_info=True)
         # Continue with normal billing flow if tier check fails
     
     # Get current subscription
