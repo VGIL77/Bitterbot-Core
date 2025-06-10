@@ -261,22 +261,28 @@
   border: none !important;
 }
 
-/* Scrollbars */
-.bitterbot-theme ::-webkit-scrollbar {
+/* Scrollbars - Hide for sidebar */
+.bitterbot-theme [data-sidebar] ::-webkit-scrollbar,
+.bitterbot-theme .sidebar-left-new ::-webkit-scrollbar {
+  display: none;
+}
+
+/* Scrollbars for other elements */
+.bitterbot-theme :not([data-sidebar]) ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-.bitterbot-theme ::-webkit-scrollbar-track {
+.bitterbot-theme :not([data-sidebar]) ::-webkit-scrollbar-track {
   background: rgba(139, 92, 246, 0.05);
 }
 
-.bitterbot-theme ::-webkit-scrollbar-thumb {
+.bitterbot-theme :not([data-sidebar]) ::-webkit-scrollbar-thumb {
   background: rgba(139, 92, 246, 0.3);
   border-radius: 4px;
 }
 
-.bitterbot-theme ::-webkit-scrollbar-thumb:hover {
+.bitterbot-theme :not([data-sidebar]) ::-webkit-scrollbar-thumb:hover {
   background: rgba(139, 92, 246, 0.5);
 }
 
@@ -561,26 +567,7 @@
   opacity: 0;
 }
 
-/* Premium scrollbar styling */
-.bitterbot-theme ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.bitterbot-theme ::-webkit-scrollbar-track {
-  background: rgba(139, 92, 246, 0.05);
-  border-radius: 5px;
-}
-
-.bitterbot-theme ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #a855f7, #ec4899);
-  border-radius: 5px;
-  box-shadow: inset 0 0 3px rgba(255, 255, 255, 0.2);
-}
-
-.bitterbot-theme ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #c084fc, #f472b6);
-}
+/* Premium scrollbar styling - removed for sidebar */
 
 /* Premium focus states */
 .bitterbot-theme *:focus-visible {

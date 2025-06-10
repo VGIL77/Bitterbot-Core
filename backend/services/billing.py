@@ -210,14 +210,14 @@ async def get_allowed_models_for_user(client, user_id: str):
     PRIVILEGED_TIERS = ['creator', 'tester', 'vip', 'investor']
     try:
         logger.debug(f"get_allowed_models_for_user: Checking tier for user_id: {user_id}")
-        result = await client.table('profiles').select('user_tier').eq('id', user_id).single()
+        profile_check = await client.table('profiles').select('id, user_tier').eq('id', user_id).execute()
         
-        if result.data:
-            user_tier = result.data.get('user_tier', 'free')
-            logger.debug(f"get_allowed_models_for_user: User {user_id} has tier: {user_tier}")
-        else:
+        if not profile_check.data:
+            logger.warning(f"get_allowed_models_for_user: No profile exists for user {user_id}")
             user_tier = 'free'
-            logger.debug(f"get_allowed_models_for_user: No profile found for user {user_id}, defaulting to 'free' tier")
+        else:
+            user_tier = profile_check.data[0].get('user_tier', 'free')
+            logger.debug(f"get_allowed_models_for_user: User {user_id} has tier: {user_tier}")
         
         if user_tier in PRIVILEGED_TIERS:
             logger.info(f"get_allowed_models_for_user: User {user_id} has privileged tier: {user_tier} - returning all models")
@@ -283,15 +283,30 @@ async def check_billing_status(client, user_id: str) -> Tuple[bool, str, Optiona
     PRIVILEGED_TIERS = ['creator', 'tester', 'vip', 'investor']
     try:
         logger.debug(f"Checking user tier for user_id: {user_id}")
-        result = await client.table('profiles').select('user_tier').eq('id', user_id).single()
-        logger.debug(f"Profile query result: {result}")
         
-        if result.data:
-            user_tier = result.data.get('user_tier', 'free')
-            logger.info(f"User {user_id} has tier: {user_tier}")
-        else:
+        # First, let's check if the profile exists at all
+        # Try with explicit public schema reference
+        try:
+            profile_check = await client.schema('public').from_('profiles').select('id, user_tier').eq('id', user_id).execute()
+            logger.debug(f"Profile check result - count: {len(profile_check.data) if profile_check.data else 0}, data: {profile_check.data}")
+        except Exception as query_error:
+            logger.error(f"Error querying profiles table: {query_error}")
+            # Fallback to simple table query
+            profile_check = await client.table('profiles').select('id, user_tier').eq('id', user_id).execute()
+            logger.debug(f"Fallback profile check result - count: {len(profile_check.data) if profile_check.data else 0}, data: {profile_check.data}")
+        
+        if not profile_check.data:
+            logger.warning(f"No profile exists for user {user_id}")
+            # Try to create a profile if it doesn't exist
+            try:
+                create_result = await client.table('profiles').insert({'id': user_id, 'user_tier': 'free'}).execute()
+                logger.info(f"Created profile for user {user_id}")
+            except Exception as create_error:
+                logger.error(f"Failed to create profile for user {user_id}: {create_error}")
             user_tier = 'free'
-            logger.warning(f"No profile found for user {user_id}, defaulting to 'free' tier")
+        else:
+            user_tier = profile_check.data[0].get('user_tier', 'free')
+            logger.info(f"User {user_id} has tier: {user_tier}")
         
         if user_tier in PRIVILEGED_TIERS:
             logger.info(f"User {user_id} has privileged tier: {user_tier} - bypassing billing")

@@ -336,6 +336,37 @@
   box-shadow: 0 10px 15px -3px rgba(var(--task-green-500), 0.25);
 }
 
+/* Animated gradient border for buttons */
+.animate-gradient-border {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, #a855f7, #ec4899, #a855f7);
+  background-size: 200% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: gradient-border-shift 3s linear infinite;
+}
+
+@keyframes gradient-border-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Hide scrollbar for sidebar specifically */
+.sidebar-left-new ::-webkit-scrollbar,
+.sidebar-left-new *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -714,6 +745,17 @@
     }
     100% {
       box-shadow: 0 0 0 0 rgba(0, 212, 230, 0);
+    }
+  }
+  
+  @keyframes gradient-border {
+    0%, 100% {
+      background: linear-gradient(90deg, #a855f7, #ec4899, #a855f7);
+      background-size: 200% 100%;
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
     }
   }
 }

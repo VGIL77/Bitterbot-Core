@@ -311,7 +311,7 @@ export function SidebarLeftNew({ isCollapsed = false, onToggle }: SidebarLeftNew
   return (
     <>
       <div
-        style={{ width: isCollapsed ? 60 : 360 }}
+        style={{ width: isCollapsed ? 60 : 380 }}
         className="h-screen bg-gradient-to-b from-[hsl(262,20%,8%)] to-[hsl(262,25%,6%)] border-r border-[hsl(262,20%,15%)] flex flex-col relative transition-all duration-300"
       >
         {/* Header */}
@@ -352,16 +352,26 @@ export function SidebarLeftNew({ isCollapsed = false, onToggle }: SidebarLeftNew
           {/* New Conversation Button */}
           {!isCollapsed && (
             <Link href="/dashboard">
-              <button className="w-full mt-4 p-3 bg-transparent border border-task-green-500 hover:bg-task-green-500/10 rounded-lg text-task-green-500 hover:text-task-green-400 font-medium flex items-center justify-center transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-task-green-500/25">
-                New Conversation
+              <button className="w-full mt-4 p-3 bg-transparent rounded-lg font-medium flex items-center justify-center transition-all duration-300 hover:scale-[1.02] relative overflow-hidden group">
+                <span className="relative z-10 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  New Conversation
+                </span>
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 opacity-100 group-hover:opacity-0 transition-opacity duration-300"></div>
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300"></div>
+                <div className="absolute inset-[1px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-transparent transition-colors duration-300"></div>
+                <div className="absolute inset-0 rounded-lg animate-gradient-border"></div>
               </button>
             </Link>
           )}
           
           {isCollapsed && (
             <Link href="/dashboard">
-              <button className="w-full mt-4 p-2 bg-transparent border border-task-green-500 hover:bg-task-green-500/10 rounded-lg text-task-green-500 hover:text-task-green-400 transition-all duration-200 hover:scale-[1.02] flex items-center justify-center text-sm font-medium">
-                New
+              <button className="w-full mt-4 p-2 bg-transparent rounded-lg transition-all duration-300 hover:scale-[1.02] relative overflow-hidden group">
+                <span className="relative z-10 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent text-sm font-medium">
+                  New
+                </span>
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500"></div>
+                <div className="absolute inset-[1px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-transparent transition-colors duration-300"></div>
               </button>
             </Link>
           )}
