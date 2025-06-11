@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { SidebarLeftNew } from '@/components/sidebar/sidebar-left-new';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 // import { PricingAlert } from "@/components/billing/pricing-alert"
 import { MaintenanceAlert } from '@/components/maintenance-alert';
 import { useAccounts } from '@/hooks/use-accounts';
