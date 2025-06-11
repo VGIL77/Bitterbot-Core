@@ -323,6 +323,7 @@ export function SidebarLeftNew({
           className="h-screen bg-gradient-to-b from-[hsl(262,20%,8%)] to-[hsl(262,25%,6%)] border-r border-[hsl(262,20%,15%)] flex flex-col relative"
         >
         {/* Header */}
+        {/* DEBUG: USING SIDEBAR-LEFT-NEW */}
         <div className="p-4 border-b border-[hsl(262,20%,15%)]">
           <div className="flex items-center justify-between">
             <Link href="/dashboard" className="flex items-center gap-3 flex-1">
