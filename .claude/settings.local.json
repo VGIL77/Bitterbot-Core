@@ -10,7 +10,8 @@
       "Bash(npx tsc:*)",
       "Bash(git log:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

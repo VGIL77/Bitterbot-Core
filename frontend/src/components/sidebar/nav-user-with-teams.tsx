@@ -160,13 +160,13 @@ export function NavUserWithTeams({
 
   return (
     <Dialog open={showNewTeamDialog} onOpenChange={setShowNewTeamDialog}>
-      <SidebarMenu>
-        <SidebarMenuItem>
+      <SidebarMenu className="p-4">
+        <SidebarMenuItem className="list-none">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton
                 size="lg"
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground bg-transparent hover:bg-[hsl(262,20%,12%)]"
               >
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />

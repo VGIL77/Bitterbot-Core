@@ -121,7 +121,7 @@ export const MessageInput = forwardRef<HTMLTextAreaElement, MessageInputProps>(
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className={cn(
-              'w-full bg-transparent dark:bg-transparent border-none shadow-none focus-visible:ring-0 px-2 py-1 text-base min-h-[40px] max-h-[200px] overflow-y-auto resize-none',
+              'w-full bg-transparent dark:bg-transparent border-none shadow-none focus-visible:ring-0 focus:ring-0 focus:outline-none focus-visible:outline-none px-2 py-1 text-base min-h-[40px] max-h-[200px] overflow-y-auto resize-none',
               isDraggingOver ? 'opacity-40' : '',
             )}
             disabled={loading || (disabled && !isAgentRunning)}
@@ -154,7 +154,6 @@ export const MessageInput = forwardRef<HTMLTextAreaElement, MessageInputProps>(
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>
-                  <p className='text-sm text-amber-500 hidden sm:block'>Upgrade for full performance</p>
                   <div className='sm:hidden absolute bottom-0 left-0 right-0 flex justify-center'>
                     <p className='text-xs text-amber-500 px-2 py-1'>
                       Upgrade for better performance

@@ -159,8 +159,8 @@ export function BrowserToolView({
       <iframe
         src={vncPreviewUrl}
         title="Browser preview"
-        className="w-full h-full border-0 min-h-[600px]"
-        style={{ width: '100%', height: '100%', minHeight: '600px' }}
+        className="w-full h-full border-0 min-h-[600px] bg-zinc-900 dark:bg-zinc-900"
+        style={{ width: '100%', height: '100%', minHeight: '600px', colorScheme: 'dark' }}
       />
     );
   }, [vncPreviewUrl]);
@@ -260,7 +260,7 @@ export function BrowserToolView({
   };
 
   return (
-    <Card className="gap-0 flex border shadow-none border-t border-b-0 border-x-0 p-0 rounded-none flex-col h-full overflow-hidden bg-white dark:bg-zinc-950">
+    <Card className="gap-0 flex border shadow-none border-t border-b-0 border-x-0 p-0 rounded-none flex-col h-full overflow-hidden bg-zinc-50 dark:bg-zinc-950">
       <CardHeader className="h-14 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur-sm border-b p-2 px-4 space-y-2">
         <div className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">

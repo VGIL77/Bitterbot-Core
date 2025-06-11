@@ -79,6 +79,7 @@ export function SidebarLeftNew({
   const [shareThreadId, setShareThreadId] = useState<string | null>(null);
   const [deleteProgress, setDeleteProgress] = useState(0);
   const [totalToDelete, setTotalToDelete] = useState(0);
+  const [showAllThreads, setShowAllThreads] = useState(false);
   const [user, setUser] = useState<{
     name: string;
     email: string;
@@ -356,37 +357,20 @@ export function SidebarLeftNew({
           </div>
           
           {/* New Conversation Button */}
-          {!isCollapsed && (
-            <Link href="/dashboard">
-              <button className="w-full mt-4 p-3 bg-transparent rounded-lg font-medium flex items-center justify-center transition-all duration-300 hover:scale-[1.02] relative overflow-hidden group">
-                <span className="relative z-10 bg-gradient-to-r from-purple-400 to-gray-300 bg-clip-text text-transparent">
-                  New Conversation (v2)
-                </span>
-                {/* Animated gradient border */}
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-gray-300 to-purple-500 animate-gradient-x"></div>
-                {/* Inner background to create the outline effect - thinner border with 1px */}
-                <div className="absolute inset-[1px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-[hsl(262,20%,10%)] transition-colors duration-300"></div>
-                {/* Glow effect on hover */}
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-gray-300 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
-              </button>
-            </Link>
-          )}
-          
-          {isCollapsed && (
-            <Link href="/dashboard">
-              <button className="w-full mt-4 p-2 bg-transparent rounded-lg transition-all duration-300 hover:scale-[1.02] relative overflow-hidden group">
-                <span className="relative z-10 bg-gradient-to-r from-purple-400 to-gray-300 bg-clip-text text-transparent text-lg font-medium">
-                  <Plus className="w-5 h-5" />
-                </span>
-                {/* Animated gradient border */}
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-gray-300 to-purple-500 animate-gradient-x"></div>
-                {/* Inner background to create the outline effect - thinner border with 1px */}
-                <div className="absolute inset-[1px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-[hsl(262,20%,10%)] transition-colors duration-300"></div>
-                {/* Glow effect on hover */}
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-gray-300 opacity-0 group-hover:opacity-20 blur-md transition-opacity duration-300"></div>
-              </button>
-            </Link>
-          )}
+          <Link href="/dashboard">
+            <button className="w-full mt-4 p-3 bg-transparent rounded-lg font-medium flex items-center justify-center transition-all duration-300 hover:scale-[1.02] relative overflow-hidden group">
+              <span className="relative z-10 flex items-center gap-2 bg-gradient-to-r from-purple-400 to-gray-300 bg-clip-text text-transparent">
+                <Plus className="w-4 h-4" />
+                {!isCollapsed && "New Conversation"}
+              </span>
+              {/* Animated gradient border */}
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-gray-300 to-purple-500 animate-gradient-x"></div>
+              {/* Inner background to create the outline effect - thinner border with 1px */}
+              <div className="absolute inset-[1px] rounded-lg bg-[hsl(262,20%,8%)] group-hover:bg-[hsl(262,20%,10%)] transition-colors duration-300"></div>
+              {/* Glow effect on hover */}
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 to-gray-300 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
+            </button>
+          </Link>
         </div>
 
         {/* Chat History */}
@@ -397,144 +381,203 @@ export function SidebarLeftNew({
             </div>
           ) : (
             <>
-              {/* Selection controls */}
-              {selectedThreads.size > 0 && !isCollapsed && (
-                <div className="p-4 border-b border-[hsl(262,20%,15%)] flex items-center justify-between">
-                  <span className="text-sm text-gray-400">
-                    {selectedThreads.size} selected
-                  </span>
-                  <div className="flex items-center gap-2">
+              {/* Chat History Header with Select Button */}
+              {!isCollapsed && combinedThreads.length > 0 && (
+                <div className="px-4 pt-2 pb-1 flex items-center justify-between">
+                  <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Conversations
+                  </h3>
+                  {selectedThreads.size === 0 ? (
                     <button
-                      onClick={() => setSelectedThreads(new Set())}
-                      className="text-xs text-gray-400 hover:text-gray-300"
+                      onClick={() => {
+                        // Enter selection mode by selecting first thread
+                        if (combinedThreads.length > 0) {
+                          setSelectedThreads(new Set([combinedThreads[0].threadId]));
+                        }
+                      }}
+                      className="text-xs text-gray-400 hover:text-gray-300 transition-colors"
                     >
-                      Clear
+                      Select
                     </button>
-                    <button
-                      onClick={handleDeleteMultiple}
-                      className="text-xs text-red-400 hover:text-red-300"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">
+                        {selectedThreads.size} selected
+                      </span>
+                      <button
+                        onClick={() => setSelectedThreads(new Set())}
+                        className="text-xs text-gray-400 hover:text-gray-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDeleteMultiple}
+                        className="text-xs text-red-400 hover:text-red-300"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
               {!isCollapsed && (
                 <div className="p-4 space-y-4">
-                  {Object.entries(threadGroups).map(([dateGroup, threads]) => (
-                    <div key={dateGroup} className="space-y-2">
-                      <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider px-2">
-                        {dateGroup}
-                      </h3>
-                      
-                      <div className="space-y-1">
-                        {threads.map((thread) => (
-                          <div
-                            key={thread.threadId}
-                            className={cn(
-                              "group relative p-3 rounded-lg cursor-pointer transition-all duration-200",
-                              "hover:bg-[hsl(262,20%,12%)] hover:scale-[1.02]",
-                              activeChat === thread.threadId 
-                                ? "bg-gradient-to-r from-purple-600/20 to-purple-700/20 border-l-2 border-purple-500 shadow-lg shadow-purple-500/10" 
-                                : "hover:shadow-md"
-                            )}
-                            onMouseEnter={() => setHoveredChat(thread.threadId)}
-                            onMouseLeave={() => setHoveredChat(null)}
-                            onClick={() => {
-                              if (selectedThreads.size > 0) {
-                                // In selection mode, toggle selection
-                                const newSelected = new Set(selectedThreads);
-                                if (newSelected.has(thread.threadId)) {
-                                  newSelected.delete(thread.threadId);
-                                } else {
-                                  newSelected.add(thread.threadId);
-                                }
-                                setSelectedThreads(newSelected);
-                              } else {
-                                // Normal navigation
-                                router.push(`/projects/${thread.projectId}/thread/${thread.threadId}`);
-                              }
-                            }}
-                          >
-                            <div className="flex items-start gap-3">
-                              {selectedThreads.size > 0 && (
-                                <Checkbox
-                                  checked={selectedThreads.has(thread.threadId)}
-                                  onCheckedChange={(checked) => {
-                                    const newSelected = new Set(selectedThreads);
-                                    if (checked) {
-                                      newSelected.add(thread.threadId);
+                  {(() => {
+                    // Get all threads and calculate total count
+                    const allThreadsArray = Object.values(threadGroups).flat();
+                    const totalThreadCount = allThreadsArray.length;
+                    const shouldShowToggle = totalThreadCount > 7;
+                    
+                    // Get threads to display based on showAllThreads state
+                    const threadsToDisplay = showAllThreads 
+                      ? allThreadsArray 
+                      : allThreadsArray.slice(0, 7);
+                    
+                    // Group the threads to display by date
+                    const displayGroups = groupThreadsByDate(threadsToDisplay);
+                    
+                    return (
+                      <>
+                        {Object.entries(displayGroups).map(([dateGroup, threads]) => (
+                          <div key={dateGroup} className="space-y-2">
+                            <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider px-2">
+                              {dateGroup}
+                            </h3>
+                            
+                            <div className="space-y-1">
+                              {threads.map((thread) => (
+                                <div
+                                  key={thread.threadId}
+                                  className={cn(
+                                    "group relative p-3 rounded-lg cursor-pointer transition-all duration-200",
+                                    "hover:bg-[hsl(262,20%,12%)] hover:scale-[1.02]",
+                                    activeChat === thread.threadId 
+                                      ? "bg-gradient-to-r from-purple-600/20 to-purple-700/20 border-l-2 border-purple-500 shadow-lg shadow-purple-500/10" 
+                                      : "hover:shadow-md"
+                                  )}
+                                  onMouseEnter={() => setHoveredChat(thread.threadId)}
+                                  onMouseLeave={() => setHoveredChat(null)}
+                                  onClick={() => {
+                                    if (selectedThreads.size > 0) {
+                                      // In selection mode, toggle selection
+                                      const newSelected = new Set(selectedThreads);
+                                      if (newSelected.has(thread.threadId)) {
+                                        newSelected.delete(thread.threadId);
+                                      } else {
+                                        newSelected.add(thread.threadId);
+                                      }
+                                      setSelectedThreads(newSelected);
                                     } else {
-                                      newSelected.delete(thread.threadId);
+                                      // Normal navigation
+                                      router.push(`/projects/${thread.projectId}/thread/${thread.threadId}`);
                                     }
-                                    setSelectedThreads(newSelected);
                                   }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="mt-0.5"
-                                />
-                              )}
-                              <MessageSquare className={cn(
-                                "w-4 h-4 mt-0.5 flex-shrink-0 transition-colors",
-                                activeChat === thread.threadId ? "text-purple-400" : "text-gray-400 group-hover:text-gray-300"
-                              )} />
-                              <div className="flex-1 min-w-0">
-                                <h4 className={cn(
-                                  "text-sm font-medium truncate transition-colors",
-                                  activeChat === thread.threadId ? "text-white" : "text-gray-200 group-hover:text-white"
-                                )}>
-                                  {thread.name}
-                                </h4>
-                                {thread.preview && (
-                                  <p className="text-xs text-gray-400 truncate mt-1">
-                                    {thread.preview}
-                                  </p>
-                                )}
-                              </div>
-                              
-                              {hoveredChat === thread.threadId && selectedThreads.size === 0 && (
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <button
-                                      className="p-1 rounded hover:bg-[hsl(262,20%,15%)] text-gray-400 hover:text-gray-300"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                      }}
-                                    >
-                                      <MoreHorizontal className="w-3 h-3" />
-                                    </button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent>
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShareThreadId(thread.threadId);
-                                        setIsShareModalOpen(true);
-                                      }}
-                                    >
-                                      <Share2 className="mr-2 h-4 w-4" />
-                                      Share
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteThread(thread.threadId, thread.name);
-                                      }}
-                                      className="text-red-600"
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              )}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    {(selectedThreads.size > 0 || hoveredChat === thread.threadId) && (
+                                      <Checkbox
+                                        checked={selectedThreads.has(thread.threadId)}
+                                        onCheckedChange={(checked) => {
+                                          const newSelected = new Set(selectedThreads);
+                                          if (checked) {
+                                            newSelected.add(thread.threadId);
+                                          } else {
+                                            newSelected.delete(thread.threadId);
+                                          }
+                                          setSelectedThreads(newSelected);
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className={cn(
+                                          "mt-0.5 transition-opacity duration-200",
+                                          selectedThreads.size === 0 && "opacity-0 group-hover:opacity-30"
+                                        )}
+                                      />
+                                    )}
+                                    <MessageSquare className={cn(
+                                      "w-4 h-4 mt-0.5 flex-shrink-0 transition-colors",
+                                      activeChat === thread.threadId ? "text-purple-400" : "text-gray-400 group-hover:text-gray-300"
+                                    )} />
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className={cn(
+                                        "text-sm font-medium truncate transition-colors",
+                                        activeChat === thread.threadId ? "text-white" : "text-gray-200 group-hover:text-white"
+                                      )}>
+                                        {thread.name}
+                                      </h4>
+                                      {thread.preview && (
+                                        <p className="text-xs text-gray-400 truncate mt-1">
+                                          {thread.preview}
+                                        </p>
+                                      )}
+                                    </div>
+                                    
+                                    {hoveredChat === thread.threadId && selectedThreads.size === 0 && (
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <button
+                                            className="p-1 rounded hover:bg-[hsl(262,20%,15%)] text-gray-400 hover:text-gray-300"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                            }}
+                                          >
+                                            <MoreHorizontal className="w-3 h-3" />
+                                          </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setShareThreadId(thread.threadId);
+                                              setIsShareModalOpen(true);
+                                            }}
+                                          >
+                                            <Share2 className="mr-2 h-4 w-4" />
+                                            Share
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteThread(thread.threadId, thread.name);
+                                            }}
+                                            className="text-red-600"
+                                          >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         ))}
-                      </div>
-                    </div>
-                  ))}
+                        
+                        {/* Show More/Less Button */}
+                        {shouldShowToggle && (
+                          <button
+                            onClick={() => setShowAllThreads(!showAllThreads)}
+                            className="w-full px-2 py-2 text-sm text-gray-400 hover:text-gray-300 flex items-center justify-center gap-2 transition-colors duration-200"
+                          >
+                            {showAllThreads ? (
+                              <>
+                                <ChevronUp className="w-4 h-4" />
+                                Show Less
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="w-4 h-4" />
+                                Show {totalThreadCount - 7} More
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
               
@@ -613,7 +656,7 @@ export function SidebarLeftNew({
         </div>
 
         {/* User Account */}
-        <div className="border-t border-[hsl(262,20%,15%)] p-4">
+        <div className="border-t border-[hsl(262,20%,15%)]">
           <NavUserWithTeams user={user} />
         </div>
       </div>

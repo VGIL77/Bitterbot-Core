@@ -93,7 +93,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <SidebarProvider>
         <SidebarLeftNew />
         <SidebarInset>
-          <div className="bg-background">{children}</div>
+          <div className="relative bg-background">
+            <SidebarTrigger className="absolute top-4 left-4 z-50 md:hidden" />
+            {children}
+          </div>
         </SidebarInset>
 
         {/* <PricingAlert 
