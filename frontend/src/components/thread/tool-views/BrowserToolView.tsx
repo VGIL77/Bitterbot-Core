@@ -141,7 +141,12 @@ export function BrowserToolView({
   }
 
   const vncPreviewUrl = project?.sandbox?.vnc_preview
-    ? `${project.sandbox.vnc_preview}/vnc_lite.html?password=${project?.sandbox?.pass}&autoconnect=true&scale=local&width=1024&height=768`
+    ? (() => {
+        const baseUrl = project.sandbox.vnc_preview.endsWith('/vnc_lite.html') 
+          ? project.sandbox.vnc_preview 
+          : `${project.sandbox.vnc_preview}/vnc_lite.html`;
+        return `${baseUrl}?password=${project?.sandbox?.pass}&autoconnect=true&scale=local&width=1024&height=768`;
+      })()
     : undefined;
 
   const isRunning = isStreaming || agentStatus === 'running';

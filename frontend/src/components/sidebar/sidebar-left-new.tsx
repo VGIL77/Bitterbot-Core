@@ -360,7 +360,7 @@ export function SidebarLeftNew({
             <Link href="/dashboard">
               <button className="w-full mt-4 p-3 bg-transparent rounded-lg font-medium flex items-center justify-center transition-all duration-300 hover:scale-[1.02] relative overflow-hidden group">
                 <span className="relative z-10 bg-gradient-to-r from-purple-400 to-gray-300 bg-clip-text text-transparent">
-                  New Conversation
+                  New Conversation (v2)
                 </span>
                 {/* Animated gradient border */}
                 <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-gray-300 to-purple-500 animate-gradient-x"></div>
