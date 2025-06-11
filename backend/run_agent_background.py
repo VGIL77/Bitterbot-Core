@@ -20,16 +20,25 @@ import pika
 rabbitmq_host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 rabbitmq_port = int(os.getenv('RABBITMQ_PORT', 5672))
 # Get RabbitMQ connection params from env
-rabbitmq_user = os.getenv('RABBITMQ_USER', 'guest')
-rabbitmq_pass = os.getenv('RABBITMQ_PASS', 'guest')
+rabbitmq_user = os.getenv('RABBITMQ_USER')
+rabbitmq_pass = os.getenv('RABBITMQ_PASS')
 
-# Create broker with auth using pika.PlainCredentials
-rabbitmq_broker = RabbitmqBroker(
-    host=rabbitmq_host,
-    port=rabbitmq_port,
-    credentials=pika.PlainCredentials(rabbitmq_user, rabbitmq_pass),
-    middleware=[dramatiq.middleware.AsyncIO()]
-)
+# Create broker with optional auth - fallback to no auth if not provided
+if rabbitmq_user and rabbitmq_pass:
+    # Use auth if credentials are provided
+    rabbitmq_broker = RabbitmqBroker(
+        host=rabbitmq_host,
+        port=rabbitmq_port,
+        credentials=pika.PlainCredentials(rabbitmq_user, rabbitmq_pass),
+        middleware=[dramatiq.middleware.AsyncIO()]
+    )
+else:
+    # No auth (like old suna build)
+    rabbitmq_broker = RabbitmqBroker(
+        host=rabbitmq_host,
+        port=rabbitmq_port,
+        middleware=[dramatiq.middleware.AsyncIO()]
+    )
 dramatiq.set_broker(rabbitmq_broker)
 
 _initialized = False

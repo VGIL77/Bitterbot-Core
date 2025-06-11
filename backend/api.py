@@ -109,8 +109,6 @@ async def log_requests_middleware(request: Request, call_next):
 
 # Define allowed origins based on environment
 allowed_origins = [
-    "https://www.suna.so",
-    "https://suna.so",
     "https://bitterbot.net",
     "https://www.bitterbot.net",
     "http://localhost:3000"
@@ -119,9 +117,9 @@ allow_origin_regex = None
 
 # Add staging-specific origins
 if config.ENV_MODE == EnvMode.STAGING:
-    allowed_origins.append("https://staging.suna.so")
+    allowed_origins.append("https://bitterbot-core-staging.up.railway.app")
     # Updated regex to include both suna and bitterbot Vercel preview URLs
-    allow_origin_regex = r"https://(suna|bitterbot)-.*-.*\.vercel\.app"
+    allow_origin_regex = r"https://(bitterbot)-.*-.*\.vercel\.app"
 elif config.ENV_MODE == EnvMode.PRODUCTION:
     # Also allow Vercel preview URLs in production for development
     allow_origin_regex = r"https://bitterbot-.*\.vercel\.app"
