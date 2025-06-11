@@ -15,6 +15,7 @@ from services import redis
 from dramatiq.brokers.rabbitmq import RabbitmqBroker
 import os
 from services.langfuse import langfuse
+import pika
 
 rabbitmq_host = os.getenv('RABBITMQ_HOST', 'rabbitmq')
 rabbitmq_port = int(os.getenv('RABBITMQ_PORT', 5672))
@@ -22,14 +23,11 @@ rabbitmq_port = int(os.getenv('RABBITMQ_PORT', 5672))
 rabbitmq_user = os.getenv('RABBITMQ_USER', 'guest')
 rabbitmq_pass = os.getenv('RABBITMQ_PASS', 'guest')
 
-# Create broker with auth using the correct parameter format
+# Create broker with auth using pika.PlainCredentials
 rabbitmq_broker = RabbitmqBroker(
     host=rabbitmq_host,
     port=rabbitmq_port,
-    credentials={
-        "username": rabbitmq_user,
-        "password": rabbitmq_pass
-    },
+    credentials=pika.PlainCredentials(rabbitmq_user, rabbitmq_pass),
     middleware=[dramatiq.middleware.AsyncIO()]
 )
 dramatiq.set_broker(rabbitmq_broker)
