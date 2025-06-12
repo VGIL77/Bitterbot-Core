@@ -32,7 +32,6 @@ StatefulTraceClient = Any
 from agent.gemini_prompt import get_gemini_system_prompt
 from agent.tools.mcp_tool_wrapper import MCPToolWrapper
 from agentpress.tool import SchemaType
-from agent.intelligent_agent import intelligent_agent, AgentMode  # 🧠 INTELLIGENT ADAPTIVE SYSTEM - SONNET 4 POWER!
 
 load_dotenv()
 
@@ -41,18 +40,16 @@ async def run_agent(
     project_id: str,
     stream: bool,
     thread_manager: Optional[ThreadManager] = None,
-    native_max_auto_continues: Optional[int] = None,  # 🧠 SONNET 4: INTELLIGENTLY DETERMINED
-    max_iterations: Optional[int] = None,             # 🧠 SONNET 4: INTELLIGENTLY DETERMINED  
+    native_max_auto_continues: int = 25,
+    max_iterations: int = 100,
     model_name: str = "anthropic/claude-3-7-sonnet-latest",
-    enable_thinking: Optional[bool] = None,           # 🧠 SONNET 4: INTELLIGENTLY DETERMINED
-    reasoning_effort: Optional[str] = None,           # 🧠 SONNET 4: INTELLIGENTLY DETERMINED
+    enable_thinking: Optional[bool] = False,
+    reasoning_effort: Optional[str] = 'low',
     enable_context_manager: bool = True,
     agent_config: Optional[dict] = None,    
     trace: Optional[StatefulTraceClient] = None,
     is_agent_builder: Optional[bool] = False,
-    target_agent_id: Optional[str] = None,
-    force_mode: Optional[str] = None,  # 🎛️ MANUAL OVERRIDE: "efficient", "beast", or None for intelligent
-    adaptive_upgrades: bool = True     # 🧠 SONNET 4 EXCLUSIVE: Enable mid-execution intelligence upgrades
+    target_agent_id: Optional[str] = None
 ):
     """Run the development agent with specified configuration."""
     logger.info(f"🚀 Starting agent with model: {model_name}")
@@ -293,101 +290,10 @@ async def run_agent(
     continue_execution = True
 
     latest_user_message = await client.table('messages').select('*').eq('thread_id', thread_id).eq('type', 'user').order('created_at', desc=True).limit(1).execute()
-    user_message_content = ""
     if latest_user_message.data and len(latest_user_message.data) > 0:
         data = json.loads(latest_user_message.data[0]['content'])
-        user_message_content = data.get('content', '')
         if trace is not None:
-            trace.update(input=user_message_content)
-
-    # 🧠🔥 SONNET 4 INTELLIGENT ADAPTIVE SYSTEM 🔥🧠
-    # The most sophisticated AI mode selection ever created!
-    logger.info("🧠 SONNET 4 INTELLIGENCE SYSTEM ACTIVATING...")
-    
-    current_mode = AgentMode.EFFICIENT  # Default starting mode
-    tool_call_count = 0  # Track tool usage for upgrade detection
-    complexity_analysis = {}  # Store analysis for monitoring
-    
-    if force_mode:
-        # Manual override - but still intelligent parameter selection
-        if force_mode.lower() == "beast":
-            current_mode = AgentMode.BEAST
-            logger.info("🎛️ MANUAL OVERRIDE: BEAST MODE FORCE-ACTIVATED!")
-        else:
-            current_mode = AgentMode.EFFICIENT
-            logger.info("🎛️ MANUAL OVERRIDE: EFFICIENT MODE SELECTED")
-    else:
-        # 🧠 PURE SONNET 4 INTELLIGENCE - Analyze and decide
-        try:
-            logger.info("🔍 ANALYZING TASK COMPLEXITY WITH SONNET 4 INTELLIGENCE...")
-            current_mode, complexity_analysis = await intelligent_agent.analyze_task_complexity(user_message_content)
-            
-            # Enhanced logging with emoji indicators
-            complexity_emoji = {
-                "SIMPLE": "🟢",
-                "MODERATE": "🟡", 
-                "COMPLEX": "🟠",
-                "EXTREME": "🔴"
-            }
-            level = complexity_analysis.get('complexity_level', 'MODERATE')
-            emoji = complexity_emoji.get(level, "🤔")
-            
-            logger.info(f"🧠 SONNET 4 ANALYSIS COMPLETE:")
-            logger.info(f"   {emoji} Complexity: {level} (Score: {complexity_analysis.get('complexity_score', 0)}/100)")
-            logger.info(f"   🎯 Selected Mode: {current_mode.value.upper()}")
-            logger.info(f"   💭 Reasoning: {complexity_analysis.get('reasoning', 'No reasoning available')}")
-            
-            # Advanced trace logging for monitoring
-            trace.event(
-                name="sonnet4_complexity_analysis", 
-                level="DEFAULT", 
-                status_message=f"🧠 Mode: {current_mode.value} | {emoji} {level} | Score: {complexity_analysis.get('complexity_score', 0)}"
-            )
-            
-            # Yield analysis results to frontend for user visibility  
-            yield {
-                "type": "status",
-                "status": "intelligence_analysis",
-                "message": f"🧠 SONNET 4 ANALYSIS: {emoji} {level} complexity detected → {current_mode.value.upper()} mode selected",
-                "metadata": json.dumps({
-                    "complexity_level": level,
-                    "complexity_score": complexity_analysis.get('complexity_score', 0),
-                    "selected_mode": current_mode.value,
-                    "reasoning": complexity_analysis.get('reasoning', '')
-                })
-            }
-            
-        except Exception as e:
-            logger.error(f"🚨 SONNET 4 ANALYSIS ERROR: {e}")
-            logger.info("🔄 FALLING BACK TO EFFICIENT MODE")
-            current_mode = AgentMode.EFFICIENT
-    
-    # 🚀 APPLY INTELLIGENT CONFIGURATION
-    mode_config = intelligent_agent.get_mode_config(current_mode)
-    
-    # Override None parameters with intelligent values
-    if native_max_auto_continues is None:
-        native_max_auto_continues = mode_config.native_max_auto_continues
-    if max_iterations is None:
-        max_iterations = mode_config.max_iterations  
-    if enable_thinking is None:
-        enable_thinking = mode_config.enable_thinking
-    if reasoning_effort is None:
-        reasoning_effort = mode_config.reasoning_effort
-    
-    # 🎨 ENHANCED CONFIGURATION LOGGING
-    logger.info(f"🚀 SONNET 4 DYNAMIC CONFIGURATION APPLIED:")
-    logger.info(f"   🔄 Max Iterations: {max_iterations:,}")
-    logger.info(f"   ⚡ Auto Continues: {native_max_auto_continues:,}")
-    logger.info(f"   🧠 Thinking Mode: {'ENABLED' if enable_thinking else 'DISABLED'}")
-    logger.info(f"   🎯 Reasoning Effort: {reasoning_effort.upper()}")
-    logger.info(f"   🌡️ Temperature: {mode_config.temperature}")
-    logger.info(f"   🔗 Dual Tool Calling: {'ENABLED' if mode_config.enable_dual_calling else 'DISABLED'}")
-    logger.info(f"   🛠️ Tool Limit: {'UNLIMITED' if mode_config.max_xml_tool_calls == 0 else mode_config.max_xml_tool_calls}")
-    logger.info(f"   🧩 Adaptive Upgrades: {'ENABLED' if adaptive_upgrades else 'DISABLED'}")
-    
-    # Store mode for upgrade detection
-    original_mode = current_mode
+            trace.update(input=data['content'])
 
     while continue_execution and iteration_count < max_iterations:
         iteration_count += 1
@@ -495,8 +401,12 @@ async def run_agent(
             # logger.debug(f"Constructed temporary message with {len(temp_message_content_list)} content blocks.")
         # ---- End Temporary Message Handling ----
 
-        # Set max_tokens based on model - BEAST MODE: NO LIMITS!
-        max_tokens = None  # 🔥 BEAST MODE: Use full context window, no artificial limits!
+        # Set max_tokens based on model
+        max_tokens = None
+        if "sonnet" in model_name.lower():
+            max_tokens = 64000
+        elif "gpt-4" in model_name.lower():
+            max_tokens = 4096
             
         generation = trace.generation(name="thread_manager.run_thread")
         try:
@@ -506,19 +416,18 @@ async def run_agent(
                 system_prompt=system_message,
                 stream=stream,
                 llm_model=model_name,
-                llm_temperature=mode_config.temperature,  # 🧠 SONNET 4: Intelligent temperature based on complexity
+                llm_temperature=0,
                 llm_max_tokens=max_tokens,
                 tool_choice="auto",
-                max_xml_tool_calls=mode_config.max_xml_tool_calls,  # 🧠 SONNET 4: Intelligent tool limits
+                max_xml_tool_calls=1,
                 temporary_message=temporary_message,
                 processor_config=ProcessorConfig(
-                    xml_tool_calling=True,                              # ✅ XML tools always enabled
-                    native_tool_calling=mode_config.enable_dual_calling, # 🧠 SONNET 4: Intelligent dual calling
-                    execute_tools=True,                                 # ✅ Execute everything  
-                    execute_on_stream=True,                             # ✅ Real-time execution
-                    tool_execution_strategy="parallel",                 # ✅ Maximum parallel execution
-                    xml_adding_strategy="user_message",                 # ✅ Best strategy
-                    max_xml_tool_calls=mode_config.max_xml_tool_calls   # 🧠 SONNET 4: Intelligent XML tool limits
+                    xml_tool_calling=True,
+                    native_tool_calling=False,
+                    execute_tools=True,
+                    execute_on_stream=True,
+                    tool_execution_strategy="parallel",
+                    xml_adding_strategy="user_message"
                 ),
                 native_max_auto_continues=native_max_auto_continues,
                 include_xml_examples=True,
@@ -590,55 +499,6 @@ async def run_agent(
                             # The actual text content is nested within
                             assistant_text = assistant_content_json.get('content', '')
                             full_response += assistant_text
-                            
-                            # 🧠🚀 SONNET 4 ADAPTIVE INTELLIGENCE SYSTEM 🚀🧠
-                            # Mid-execution complexity detection and mode upgrades!
-                            if adaptive_upgrades and current_mode == AgentMode.EFFICIENT and assistant_text:
-                                should_upgrade = intelligent_agent.should_upgrade_to_beast_mode(
-                                    assistant_text, iteration_count, tool_call_count, current_mode
-                                )
-                                
-                                if should_upgrade:
-                                    logger.info("🚀🧠 SONNET 4 INTELLIGENCE UPGRADE ACTIVATED! 🧠🚀")
-                                    logger.info("   🔍 Complexity escalation detected during execution")
-                                    logger.info("   ⚡ Switching to BEAST MODE for maximum capabilities")
-                                    
-                                    # Upgrade to beast mode
-                                    current_mode = AgentMode.BEAST
-                                    mode_config = intelligent_agent.get_mode_config(current_mode)
-                                    
-                                    # Update runtime parameters for remaining iterations
-                                    max_iterations = mode_config.max_iterations
-                                    native_max_auto_continues = mode_config.native_max_auto_continues
-                                    
-                                    # Enhanced upgrade logging
-                                    trace.event(
-                                        name="sonnet4_intelligence_upgrade", 
-                                        level="DEFAULT", 
-                                        status_message=f"🧠🚀 INTELLIGENT UPGRADE: EFFICIENT → BEAST at iteration {iteration_count}"
-                                    )
-                                    
-                                    # Yield spectacular upgrade notification to user
-                                    yield {
-                                        "type": "status",
-                                        "status": "intelligence_upgrade",
-                                        "message": "🧠🚀 SONNET 4 INTELLIGENCE: Task complexity exceeded expectations → UPGRADING TO BEAST MODE!",
-                                        "metadata": json.dumps({
-                                            "upgrade_iteration": iteration_count,
-                                            "original_mode": original_mode.value,
-                                            "new_mode": current_mode.value,
-                                            "reason": "mid_execution_complexity_escalation",
-                                            "new_max_iterations": max_iterations,
-                                            "new_auto_continues": native_max_auto_continues
-                                        })
-                                    }
-                                    
-                                    logger.info(f"🚀 UPGRADED CONFIGURATION:")
-                                    logger.info(f"   🔄 New Max Iterations: {max_iterations:,}")
-                                    logger.info(f"   ⚡ New Auto Continues: {native_max_auto_continues:,}")
-                                    logger.info(f"   🛠️ Tool Limits: REMOVED")
-                                    logger.info(f"   🧠 Enhanced Reasoning: ACTIVATED")
-                            
                             if isinstance(assistant_text, str):
                                 if '</ask>' in assistant_text or '</complete>' in assistant_text or '</web-browser-takeover>' in assistant_text:
                                    if '</ask>' in assistant_text:
