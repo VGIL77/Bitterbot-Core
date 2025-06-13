@@ -148,6 +148,7 @@ OPENAI_API_KEY=your_openai_api_key
 TAVILY_API_KEY=your_tavily_api_key  # For enhanced search capabilities
 FIRECRAWL_API_KEY=your_firecrawl_api_key  # For web scraping capabilities
 RAPID_API_KEY=
+GITHUB_TOKEN=your_github_token  # Personal access token for GitHub API
 ```
 
 3. **Set up Supabase database**:

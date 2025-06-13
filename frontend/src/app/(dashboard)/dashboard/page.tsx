@@ -28,6 +28,7 @@ import { ModalProviders } from '@/providers/modal-providers';
 import { AgentSelector } from '@/components/dashboard/agent-selector';
 import { cn } from '@/lib/utils';
 import { useModal } from '@/hooks/use-modal-store';
+import { GitHubCodeViewer } from '@/components/github/GitHubCodeViewer';
 // import { Examples } from './_components/suggestions/examples';
 
 const PENDING_PROMPT_KEY = 'pendingAgentPrompt';
@@ -48,6 +49,7 @@ function DashboardContent() {
   const chatInputRef = useRef<ChatInputHandles>(null);
   const initiateAgentMutation = useInitiateAgentWithInvalidation();
   const { onOpen } = useModal();
+  const [githubViewerOpen, setGithubViewerOpen] = useState(false);
 
   useEffect(() => {
     const agentIdFromUrl = searchParams.get('agent_id');
@@ -202,6 +204,11 @@ function DashboardContent() {
               onChange={setInputValue}
               hideAttachments={false}
             />
+            <div className="mt-2 text-right">
+              <Button variant="outline" size="sm" onClick={() => setGithubViewerOpen(true)}>
+                Inspect GitHub Repo
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -212,6 +219,13 @@ function DashboardContent() {
           accountId={personalAccount?.account_id}
           onDismiss={clearBillingError}
           isOpen={!!billingError}
+        />
+        <GitHubCodeViewer
+          open={githubViewerOpen}
+          onOpenChange={setGithubViewerOpen}
+          owner="VGIL77"
+          repo="Bitterbot-Core"
+          path="README.md"
         />
       </div>
     </>
