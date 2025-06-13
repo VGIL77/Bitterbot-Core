@@ -22,10 +22,10 @@ from utils.config import config
 # litellm.set_verbose=True
 litellm.modify_params=True
 
-# Constants
-MAX_RETRIES = 2
-RATE_LIMIT_DELAY = 30
-RETRY_DELAY = 0.1
+# Constants - Optimized for Opus 4 performance
+MAX_RETRIES = 3  # Increased for better reliability
+RATE_LIMIT_DELAY = 20  # Reduced for faster recovery
+RETRY_DELAY = 0.5  # Slightly increased for stability
 
 class LLMError(Exception):
     """Base exception for LLM-related errors."""

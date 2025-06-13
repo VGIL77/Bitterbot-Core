@@ -8,7 +8,7 @@ import { useAvailableModels } from '@/hooks/react-query/subscriptions/use-model'
 export const STORAGE_KEY_MODEL = 'Bitterbot-preferred-model';
 export const STORAGE_KEY_CUSTOM_MODELS = 'customModels';
 export const DEFAULT_FREE_MODEL_ID = 'claude-sonnet-4';
-export const DEFAULT_PREMIUM_MODEL_ID = 'claude-sonnet-4';
+export const DEFAULT_PREMIUM_MODEL_ID = 'claude-opus-4';
 
 export type SubscriptionStatus = 'no_subscription' | 'active';
 
@@ -30,6 +30,13 @@ export interface CustomModel {
 // SINGLE SOURCE OF TRUTH for all model data
 export const MODELS = {
   // Premium high-priority models
+  'claude-opus-4': { 
+    tier: 'premium',
+    priority: 110, 
+    recommended: true,
+    lowQuality: false,
+    description: 'Claude Opus 4 - Anthropic\'s most powerful AI with 128k output and high reasoning'
+  },
   'claude-sonnet-4': { 
     tier: 'premium',
     priority: 100, 

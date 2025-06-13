@@ -34,8 +34,8 @@ REDIS_RESPONSE_LIST_TTL = 3600 * 24
 
 class AgentStartRequest(BaseModel):
     model_name: Optional[str] = None  # Will be set from config.MODEL_TO_USE in the endpoint
-    enable_thinking: Optional[bool] = False
-    reasoning_effort: Optional[str] = 'low'
+    enable_thinking: Optional[bool] = True  # Default to True for Opus 4
+    reasoning_effort: Optional[str] = 'high'  # Default to high reasoning
     stream: Optional[bool] = True
     enable_context_manager: Optional[bool] = False
     agent_id: Optional[str] = None  # Custom agent to use
@@ -820,8 +820,8 @@ async def generate_and_update_project_name(project_id: str, prompt: str):
 async def initiate_agent_with_files(
     prompt: str = Form(...),
     model_name: Optional[str] = Form(None),  # Default to None to use config.MODEL_TO_USE
-    enable_thinking: Optional[bool] = Form(False),
-    reasoning_effort: Optional[str] = Form("low"),
+    enable_thinking: Optional[bool] = Form(True),  # Default to True for Opus 4
+    reasoning_effort: Optional[str] = Form("high"),  # Default to high reasoning
     stream: Optional[bool] = Form(True),
     enable_context_manager: Optional[bool] = Form(False),
     agent_id: Optional[str] = Form(None),  # Add agent_id parameter

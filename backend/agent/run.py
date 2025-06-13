@@ -403,7 +403,9 @@ async def run_agent(
 
         # Set max_tokens based on model
         max_tokens = None
-        if "sonnet" in model_name.lower():
+        if "opus" in model_name.lower():
+            max_tokens = 128000  # 128k for Opus models
+        elif "sonnet" in model_name.lower():
             max_tokens = 64000
         elif "gpt-4" in model_name.lower():
             max_tokens = 4096
