@@ -1864,3 +1864,69 @@ export const getAgentBuilderChatHistory = async (agentId: string): Promise<{mess
 
   return data;
 };
+
+// GitHub API functions
+export const listGithubRepos = async () => {
+  const response = await fetch(`${API_URL}/github/repos`);
+  if (!response.ok) {
+    throw new Error('Failed to list GitHub repositories');
+  }
+  return response.json();
+};
+
+export const getGithubRepoTree = async (
+  owner: string,
+  repo: string,
+  ref = 'HEAD',
+) => {
+  const response = await fetch(
+    `${API_URL}/github/repos/${owner}/${repo}/tree?ref=${ref}`,
+  );
+  if (!response.ok) {
+    throw new Error('Failed to fetch repository tree');
+  }
+  return response.json();
+};
+
+export const getGithubFileContent = async (
+  owner: string,
+  repo: string,
+  path: string,
+  ref = 'main',
+) => {
+  const url = `${API_URL}/github/repos/${owner}/${repo}/content?path=${encodeURIComponent(
+    path,
+  )}&ref=${ref}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Failed to fetch file content');
+  }
+  const data = await response.json();
+  return data.content as string;
+};
+
+export interface GitHubCommitRequest {
+  path: string;
+  content: string;
+  message: string;
+  branch?: string;
+}
+
+export const commitGithubFile = async (
+  owner: string,
+  repo: string,
+  payload: GitHubCommitRequest,
+) => {
+  const response = await fetch(
+    `${API_URL}/github/repos/${owner}/${repo}/commit`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!response.ok) {
+    throw new Error('Failed to commit file');
+  }
+  return response.json();
+};

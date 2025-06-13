@@ -5,6 +5,7 @@ import sentry
 from contextlib import asynccontextmanager
 from agentpress.thread_manager import ThreadManager
 from services.supabase import DBConnection
+from services.github_client import GitHubClient
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 from utils.config import config, EnvMode
@@ -31,6 +32,7 @@ if sys.platform == "win32":
 # Initialize managers
 db = DBConnection()
 instance_id = "single"
+github_client = GitHubClient()
 
 
 # Rate limiter state
@@ -150,10 +152,62 @@ async def health_check():
     """Health check endpoint to verify API is working."""
     logger.info("Health check endpoint called")
     return {
-        "status": "ok", 
+        "status": "ok",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "instance_id": instance_id
     }
+
+
+# GitHub integration endpoints
+@app.get("/api/github/repos")
+async def list_github_repos():
+    try:
+        return github_client.list_repos()
+    except Exception as e:
+        logger.error(f"Error listing GitHub repos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/github/repos/{owner}/{repo}/tree")
+async def get_repo_tree(owner: str, repo: str, ref: str = "HEAD"):
+    try:
+        return github_client.get_tree(owner, repo, ref)
+    except Exception as e:
+        logger.error(f"Error fetching repo tree: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/github/repos/{owner}/{repo}/content")
+async def get_repo_content(owner: str, repo: str, path: str, ref: str = "main"):
+    try:
+        content = github_client.get_file_content(owner, repo, path, ref)
+        return {"content": content}
+    except Exception as e:
+        logger.error(f"Error fetching file content: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class GitHubCommitRequest(BaseModel):
+    path: str
+    content: str
+    message: str
+    branch: str | None = "main"
+
+
+@app.post("/api/github/repos/{owner}/{repo}/commit")
+async def commit_repo_file(owner: str, repo: str, request: GitHubCommitRequest):
+    try:
+        return github_client.commit_file(
+            owner,
+            repo,
+            request.path,
+            request.content,
+            request.message,
+            request.branch or "main",
+        )
+    except Exception as e:
+        logger.error(f"Error committing file: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 class CustomMCPDiscoverRequest(BaseModel):
     type: str
