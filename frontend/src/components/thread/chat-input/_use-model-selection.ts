@@ -8,7 +8,7 @@ import { useAvailableModels } from '@/hooks/react-query/subscriptions/use-model'
 export const STORAGE_KEY_MODEL = 'Bitterbot-preferred-model';
 export const STORAGE_KEY_CUSTOM_MODELS = 'customModels';
 export const DEFAULT_FREE_MODEL_ID = 'claude-sonnet-4';
-export const DEFAULT_PREMIUM_MODEL_ID = 'claude-opus-4';
+export const DEFAULT_PREMIUM_MODEL_ID = 'claude-sonnet-4';  // Temporarily using Sonnet 4 due to Opus 4 overload
 
 export type SubscriptionStatus = 'no_subscription' | 'active';
 

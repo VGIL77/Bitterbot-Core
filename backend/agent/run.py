@@ -401,14 +401,8 @@ async def run_agent(
             # logger.debug(f"Constructed temporary message with {len(temp_message_content_list)} content blocks.")
         # ---- End Temporary Message Handling ----
 
-        # Set max_tokens based on model
-        max_tokens = None
-        if "opus" in model_name.lower():
-            max_tokens = 128000  # 128k for Opus models
-        elif "sonnet" in model_name.lower():
-            max_tokens = 64000
-        elif "gpt-4" in model_name.lower():
-            max_tokens = 4096
+        # No token limits - let it rip! 🚀
+        max_tokens = None  # No limits, baby!
             
         generation = trace.generation(name="thread_manager.run_thread")
         try:
