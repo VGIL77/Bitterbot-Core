@@ -3,6 +3,9 @@ Context Management for AgentPress Threads.
 
 This module handles token counting and thread summarization to prevent
 reaching the context window limitations of LLM models.
+
+Now enhanced with engram-based memory consolidation for continuous
+micro-consolidations instead of single large summaries.
 """
 
 import json
@@ -12,11 +15,13 @@ from litellm import token_counter, completion_cost
 from services.supabase import DBConnection
 from services.llm import make_llm_api_call
 from utils.logger import logger
+from .engram_manager import EngramManager, ENGRAM_CHUNK_SIZE
 
 # Constants for token management
-DEFAULT_TOKEN_THRESHOLD = 120000  # 80k tokens threshold for summarization
+DEFAULT_TOKEN_THRESHOLD = 80000  # Lowered to 80k to prevent hitting 200k limit
 SUMMARY_TARGET_TOKENS = 10000    # Target ~10k tokens for the summary message
 RESERVE_TOKENS = 5000            # Reserve tokens for new messages
+ENGRAM_INTEGRATION_ENABLED = True  # Feature flag for gradual rollout
 
 class ContextManager:
     """Manages thread context including token counting and summarization."""
@@ -29,6 +34,7 @@ class ContextManager:
         """
         self.db = DBConnection()
         self.token_threshold = token_threshold
+        self.engram_manager = EngramManager() if ENGRAM_INTEGRATION_ENABLED else None
     
     async def get_thread_token_count(self, thread_id: str) -> int:
         """Get the current token count for a thread using LiteLLM.
@@ -295,4 +301,111 @@ The above is a summary of the conversation history. The conversation continues b
                 
         except Exception as e:
             logger.error(f"Error in check_and_summarize_if_needed: {str(e)}", exc_info=True)
-            return False 
+            return False
+    
+    async def process_message_for_engrams(self, thread_id: str, message: Dict[str, Any]) -> None:
+        """Process a message through the engram system if enabled.
+        
+        This creates micro-consolidations continuously instead of waiting
+        for the context window to fill up.
+        """
+        if not self.engram_manager:
+            return
+            
+        try:
+            # Process message and potentially create an engram
+            engram = await self.engram_manager.process_message(thread_id, message)
+            
+            if engram:
+                logger.info(f"Created engram {engram.id} for thread {thread_id}")
+                
+        except Exception as e:
+            logger.error(f"Error processing message for engrams: {e}")
+            
+    async def get_relevant_engrams_for_context(self, thread_id: str, 
+                                              current_query: str = "") -> List[Dict[str, Any]]:
+        """Retrieve relevant engrams to include in the context.
+        
+        Returns formatted engrams ready to be inserted into the prompt.
+        """
+        if not self.engram_manager:
+            return []
+            
+        try:
+            # Get relevant engrams
+            engrams = await self.engram_manager.retrieve_relevant_engrams(
+                thread_id, current_query
+            )
+            
+            if not engrams:
+                return []
+                
+            # Format for inclusion in context
+            formatted_engrams = []
+            for engram in engrams:
+                formatted_engrams.append({
+                    "role": "system",
+                    "content": f"[Memory from earlier in conversation - {engram.created_at.strftime('%Y-%m-%d %H:%M')}]:\n{engram.content}"
+                })
+                
+            logger.info(f"Retrieved {len(formatted_engrams)} engrams for context")
+            return formatted_engrams
+            
+        except Exception as e:
+            logger.error(f"Error retrieving engrams: {e}")
+            return []
+            
+    async def should_use_engram_system(self, thread_id: str) -> bool:
+        """Determine if we should use the engram system for this thread.
+        
+        Can be used to gradually roll out or A/B test the feature.
+        """
+        if not ENGRAM_INTEGRATION_ENABLED:
+            return False
+            
+        # Could add more logic here for gradual rollout
+        # For now, use for all threads when enabled
+        return True
+        
+    async def get_enhanced_context(self, thread_id: str, 
+                                 messages: List[Dict[str, Any]],
+                                 current_query: str = "") -> List[Dict[str, Any]]:
+        """Get an enhanced context that includes relevant engrams.
+        
+        This is the main integration point - instead of just using recent messages,
+        we augment with relevant memory consolidations.
+        """
+        if not await self.should_use_engram_system(thread_id):
+            return messages
+            
+        try:
+            # Get relevant engrams
+            engram_messages = await self.get_relevant_engrams_for_context(
+                thread_id, current_query
+            )
+            
+            if not engram_messages:
+                return messages
+                
+            # Insert engrams strategically in the message list
+            # Put them after system message but before conversation
+            enhanced_messages = []
+            
+            # Find where to insert (after system message if exists)
+            insert_index = 0
+            for i, msg in enumerate(messages):
+                if msg.get("role") == "system":
+                    insert_index = i + 1
+                    break
+                    
+            # Build enhanced message list
+            enhanced_messages.extend(messages[:insert_index])
+            enhanced_messages.extend(engram_messages)
+            enhanced_messages.extend(messages[insert_index:])
+            
+            logger.info(f"Enhanced context with {len(engram_messages)} engrams")
+            return enhanced_messages
+            
+        except Exception as e:
+            logger.error(f"Error enhancing context with engrams: {e}")
+            return messages 
