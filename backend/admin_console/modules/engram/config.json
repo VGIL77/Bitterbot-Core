@@ -1,0 +1,41 @@
+{
+  "id": "engram",
+  "name": "ENGRAM Neural Observatory",
+  "description": "Real-time memory consolidation monitoring and visualization",
+  "icon": "🧠",
+  "version": "1.0.0",
+  "author": "VMG & Claude",
+  "route": "/modules/engram",
+  "permissions": ["read:engrams", "read:metrics", "export:data"],
+  
+  "endpoints": {
+    "metrics": "/api/engrams/metrics",
+    "events": "/ws/engrams",
+    "export": "/api/engrams/export"
+  },
+  
+  "features": {
+    "realtime": true,
+    "3d_visualization": true,
+    "data_export": true,
+    "academic_mode": true
+  },
+  
+  "deployment": {
+    "backend": {
+      "service": "engram-service",
+      "port": 8080,
+      "healthcheck": "/health"
+    },
+    "frontend": {
+      "static": true,
+      "ssr": false
+    }
+  },
+  
+  "metrics": {
+    "refresh_rate": 1000,
+    "retention_days": 30,
+    "export_formats": ["json", "csv", "parquet"]
+  }
+}

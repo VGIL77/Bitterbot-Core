@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENGRAM Neural Observatory | Superintelligence Memory Visualization</title>
+    
+    <!-- Three.js for 3D visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- D3.js for advanced data viz -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <!-- Chart.js for real-time graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <!-- Particles.js for background effects -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    
+    <!-- Socket.io for real-time updates -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Particle background -->
+    <div id="particles-js"></div>
+    
+    <!-- Main container -->
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="neural-header">
+            <div class="logo-section">
+                <div class="brain-icon">🧠</div>
+                <div class="title-section">
+                    <h1 class="main-title">ENGRAM NEURAL OBSERVATORY</h1>
+                    <p class="subtitle">Real-Time Superintelligence Memory Consolidation</p>
+                </div>
+            </div>
+            <div class="status-indicators">
+                <div class="indicator" id="status-indicator">
+                    <span class="indicator-label">SYSTEM</span>
+                    <span class="indicator-value pulse">ACTIVE</span>
+                </div>
+                <div class="indicator" id="engram-rate">
+                    <span class="indicator-label">ENGRAM/MIN</span>
+                    <span class="indicator-value" id="engram-rate-value">0.0</span>
+                </div>
+                <div class="indicator" id="memory-health">
+                    <span class="indicator-label">HEALTH</span>
+                    <span class="indicator-value" id="health-value">--</span>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main visualization area -->
+        <div class="main-content">
+            <!-- 3D Neural Network Visualization -->
+            <div class="neural-viz-container">
+                <div class="section-header">
+                    <h2>MEMORY CONSTELLATION</h2>
+                    <div class="controls">
+                        <button class="control-btn" id="rotate-toggle">AUTO-ROTATE</button>
+                        <button class="control-btn" id="view-mode">3D VIEW</button>
+                        <button class="control-btn" id="neural-pulse">NEURAL PULSE</button>
+                    </div>
+                </div>
+                <div id="neural-3d-viz" class="visualization-area"></div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #00ffff;"></span>
+                        <span>Recent Engram</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #ff00ff;"></span>
+                        <span>High Relevance</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #ffff00;"></span>
+                        <span>Surprise Moment</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #00ff00;"></span>
+                        <span>Active Retrieval</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Real-time metrics -->
+            <div class="metrics-grid">
+                <!-- Memory Wave Pattern -->
+                <div class="metric-card">
+                    <h3>CONSOLIDATION WAVES</h3>
+                    <canvas id="wave-chart" class="chart-canvas"></canvas>
+                    <div class="metric-stats">
+                        <div class="stat">
+                            <span class="stat-label">Frequency</span>
+                            <span class="stat-value" id="wave-frequency">--</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Amplitude</span>
+                            <span class="stat-value" id="wave-amplitude">--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hebbian Strength Network -->
+                <div class="metric-card">
+                    <h3>HEBBIAN NETWORK</h3>
+                    <div id="hebbian-network" class="network-viz"></div>
+                    <div class="metric-stats">
+                        <div class="stat">
+                            <span class="stat-label">Connections</span>
+                            <span class="stat-value" id="hebbian-connections">--</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Strength</span>
+                            <span class="stat-value" id="hebbian-strength">--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Memory Decay Visualization -->
+                <div class="metric-card">
+                    <h3>MEMORY DECAY CURVE</h3>
+                    <canvas id="decay-chart" class="chart-canvas"></canvas>
+                    <div class="metric-stats">
+                        <div class="stat">
+                            <span class="stat-label">Half-life</span>
+                            <span class="stat-value" id="memory-halflife">--</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">R² Fit</span>
+                            <span class="stat-value" id="decay-fit">--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Surprise Detection Radar -->
+                <div class="metric-card">
+                    <h3>SURPRISE DETECTION</h3>
+                    <canvas id="surprise-radar" class="chart-canvas"></canvas>
+                    <div class="metric-stats">
+                        <div class="stat">
+                            <span class="stat-label">Peak</span>
+                            <span class="stat-value" id="surprise-peak">--</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Events/hr</span>
+                            <span class="stat-value" id="surprise-rate">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Live Engram Stream -->
+            <div class="engram-stream">
+                <h3>LIVE ENGRAM STREAM</h3>
+                <div id="engram-feed" class="feed-container">
+                    <!-- Live engrams will be inserted here -->
+                </div>
+            </div>
+            
+            <!-- Cognitive Load Meter -->
+            <div class="cognitive-load-section">
+                <h3>COGNITIVE LOAD DYNAMICS</h3>
+                <div class="load-meters">
+                    <div class="load-meter">
+                        <div class="meter-label">COMPRESSION</div>
+                        <div class="meter-container">
+                            <div class="meter-fill" id="compression-meter" style="width: 0%"></div>
+                        </div>
+                        <span class="meter-value" id="compression-value">0:1</span>
+                    </div>
+                    <div class="load-meter">
+                        <div class="meter-label">RETRIEVAL PRECISION</div>
+                        <div class="meter-container">
+                            <div class="meter-fill" id="precision-meter" style="width: 0%"></div>
+                        </div>
+                        <span class="meter-value" id="precision-value">0%</span>
+                    </div>
+                    <div class="load-meter">
+                        <div class="meter-label">CONTEXT CONTINUITY</div>
+                        <div class="meter-container">
+                            <div class="meter-fill" id="continuity-meter" style="width: 0%"></div>
+                        </div>
+                        <span class="meter-value" id="continuity-value">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer with thread selector -->
+        <footer class="dashboard-footer">
+            <div class="thread-selector">
+                <label>THREAD:</label>
+                <select id="thread-select">
+                    <option value="system-wide">SYSTEM-WIDE</option>
+                </select>
+            </div>
+            <div class="timestamp">
+                <span id="last-update">Last update: --</span>
+            </div>
+            <div class="credits">
+                <span>Created by VMG & Claude | Neuroscience-Inspired AI</span>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- Audio for neural activity -->
+    <audio id="neural-sound" loop>
+        <source src="neural-ambience.mp3" type="audio/mpeg">
+    </audio>
+    
+    <!-- Scripts -->
+    <script src="neural-viz.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

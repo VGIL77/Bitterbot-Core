@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 """
 Engram Memory System Monitoring Script.
 
@@ -345,6 +346,199 @@ async def main():
         logger.error(f"Error generating report: {e}")
         print(f"❌ Error: {e}")
         
+=======
+#!/usr/bin/env python3
+"""
+Monitor Engram Memory System Performance.
+
+Run this script to get real-time metrics about your engram memory system.
+Usage: python monitor_engrams.py [thread_id]
+"""
+
+import asyncio
+import json
+import sys
+from datetime import datetime, timezone
+from typing import Optional
+
+from engram_metrics import (
+    EngramMetrics,
+    MemoryHealthMetrics,
+    CognitiveLoadMetrics,
+    NeuroscienceMetrics,
+    ExperienceMetrics
+)
+from utils.logger import logger
+
+
+async def generate_metrics_report(thread_id: Optional[str] = None):
+    """Generate a comprehensive metrics report."""
+    
+    print("\n" + "="*80)
+    print("🧠 ENGRAM MEMORY SYSTEM METRICS REPORT")
+    print("="*80)
+    print(f"Generated at: {datetime.now(timezone.utc).isoformat()}")
+    
+    if thread_id:
+        print(f"Thread ID: {thread_id}")
+    else:
+        print("Scope: System-wide")
+    
+    # Initialize metrics
+    basic = EngramMetrics()
+    health = MemoryHealthMetrics()
+    cognitive = CognitiveLoadMetrics()
+    neuro = NeuroscienceMetrics()
+    experience = ExperienceMetrics()
+    
+    try:
+        # Basic Statistics
+        print("\n📊 BASIC STATISTICS")
+        print("-" * 40)
+        basic_stats = await basic.get_basic_stats(thread_id)
+        print(f"Total Engrams: {basic_stats['total_engrams']}")
+        print(f"Average Relevance Score: {basic_stats['avg_relevance_score']:.3f}")
+        print(f"Average Access Count: {basic_stats['avg_access_count']:.1f}")
+        print(f"Average Surprise Score: {basic_stats['avg_surprise_score']:.3f}")
+        print(f"Total Tokens Compressed: {basic_stats['total_tokens_compressed']:,}")
+        print(f"Total Tokens in Summaries: {basic_stats['total_tokens_in_summaries']:,.0f}")
+        
+        if basic_stats['total_tokens_compressed'] > 0:
+            compression = basic_stats['total_tokens_compressed'] / basic_stats['total_tokens_in_summaries']
+            print(f"Compression Ratio: {compression:.2f}:1")
+        
+        if thread_id and basic_stats['total_engrams'] > 0:
+            # Memory Health
+            print("\n🏥 MEMORY HEALTH")
+            print("-" * 40)
+            diversity = await health.calculate_memory_diversity_index(thread_id)
+            coherence = await health.calculate_memory_coherence_score(thread_id)
+            surprise_accuracy = await health.calculate_surprise_accuracy(thread_id)
+            
+            print(f"Topic Diversity Index: {diversity:.3f} (0=homogeneous, 1=diverse)")
+            print(f"Memory Coherence Score: {coherence:.3f} (0=fragmented, 1=coherent)")
+            print(f"Surprise Prediction Accuracy: {surprise_accuracy:.3f} (-1 to 1, higher=better)")
+            
+            # Cognitive Load
+            print("\n🧩 COGNITIVE LOAD MANAGEMENT")
+            print("-" * 40)
+            compression_ratio = await cognitive.calculate_context_compression_ratio(thread_id)
+            retrieval_precision = await cognitive.calculate_retrieval_precision(thread_id)
+            coverage = await cognitive.calculate_memory_coverage(thread_id)
+            
+            print(f"Context Compression Ratio: {compression_ratio:.1f}:1")
+            print(f"Retrieval Precision (24h): {retrieval_precision:.1%}")
+            print(f"Message Coverage: {coverage['message_coverage']:.1%}")
+            print(f"Estimated Token Coverage: {coverage['estimated_token_coverage']:.1%}")
+            
+            # Neuroscience Metrics
+            print("\n🔬 NEUROSCIENCE-INSPIRED METRICS")
+            print("-" * 40)
+            forgetting_fit = await neuro.calculate_forgetting_curve_fit(thread_id)
+            consolidation_waves = await neuro.calculate_consolidation_waves(thread_id)
+            
+            print(f"Forgetting Curve Fit (R²): {forgetting_fit:.3f} (1=perfect Ebbinghaus curve)")
+            print(f"Consolidation Waves Detected: {len(consolidation_waves)}")
+            
+            if consolidation_waves:
+                avg_wave_duration = sum(w['duration_minutes'] for w in consolidation_waves) / len(consolidation_waves)
+                avg_engrams_per_wave = sum(w['engram_count'] for w in consolidation_waves) / len(consolidation_waves)
+                print(f"  Average Wave Duration: {avg_wave_duration:.1f} minutes")
+                print(f"  Average Engrams per Wave: {avg_engrams_per_wave:.1f}")
+            
+            # Experience Metrics
+            print("\n✨ USER EXPERIENCE IMPACT")
+            print("-" * 40)
+            continuity = await experience.calculate_context_continuity_score(thread_id)
+            delight_moments = await experience.calculate_memory_surprise_delight(thread_id)
+            
+            print(f"Context Continuity Score: {continuity:.3f} (0=amnesia, 1=perfect recall)")
+            print(f"Memory Surprise Delight Moments (24h): {delight_moments}")
+            
+            # Performance Assessment
+            print("\n🎯 OVERALL PERFORMANCE ASSESSMENT")
+            print("-" * 40)
+            
+            # Calculate overall health score
+            health_score = (
+                diversity * 0.15 +
+                coherence * 0.20 +
+                max(0, surprise_accuracy) * 0.15 +
+                min(1, compression_ratio / 10) * 0.20 +
+                retrieval_precision * 0.15 +
+                continuity * 0.15
+            )
+            
+            print(f"Overall Health Score: {health_score:.1%}")
+            
+            if health_score >= 0.8:
+                assessment = "🟢 EXCELLENT - System performing optimally"
+            elif health_score >= 0.6:
+                assessment = "🟡 GOOD - Minor optimization opportunities"
+            elif health_score >= 0.4:
+                assessment = "🟠 FAIR - Consider tuning parameters"
+            else:
+                assessment = "🔴 NEEDS ATTENTION - Review configuration"
+            
+            print(f"Assessment: {assessment}")
+            
+            # Recommendations
+            print("\n💡 RECOMMENDATIONS")
+            print("-" * 40)
+            
+            if diversity < 0.3:
+                print("- Low topic diversity: Consider more aggressive surprise detection")
+            if coherence < 0.5:
+                print("- Low coherence: Increase context window for engram creation")
+            if compression_ratio < 5:
+                print("- Low compression: Review summarization quality")
+            if retrieval_precision < 0.5:
+                print("- Low retrieval precision: Adjust relevance scoring algorithm")
+            if continuity < 0.5:
+                print("- Low continuity: Increase max engrams in context")
+            
+            if health_score >= 0.8:
+                print("- System is performing well! No major changes needed.")
+    
+    except Exception as e:
+        logger.error(f"Error generating metrics report: {e}")
+        print(f"\n❌ Error generating report: {e}")
+    
+    print("\n" + "="*80 + "\n")
+
+
+async def monitor_realtime(thread_id: Optional[str] = None):
+    """Monitor metrics in real-time with periodic updates."""
+    
+    print("\n🔄 Starting real-time monitoring (Ctrl+C to stop)...")
+    print("Updates every 60 seconds\n")
+    
+    try:
+        while True:
+            await generate_metrics_report(thread_id)
+            await asyncio.sleep(60)  # Update every minute
+    except KeyboardInterrupt:
+        print("\n✋ Monitoring stopped.")
+
+
+async def main():
+    """Main entry point."""
+    
+    if len(sys.argv) > 2 and sys.argv[1] == "--realtime":
+        thread_id = sys.argv[2] if len(sys.argv) > 2 else None
+        await monitor_realtime(thread_id)
+    elif len(sys.argv) > 1 and sys.argv[1] == "--help":
+        print(__doc__)
+        print("\nOptions:")
+        print("  python monitor_engrams.py                    # System-wide report")
+        print("  python monitor_engrams.py THREAD_ID          # Single thread report")
+        print("  python monitor_engrams.py --realtime         # Real-time monitoring")
+        print("  python monitor_engrams.py --realtime THREAD_ID  # Real-time for thread")
+    else:
+        thread_id = sys.argv[1] if len(sys.argv) > 1 else None
+        await generate_metrics_report(thread_id)
+
+>>>>>>> Stashed changes
 
 if __name__ == "__main__":
     asyncio.run(main())

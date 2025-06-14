@@ -316,9 +316,27 @@ Here are the XML tools available with examples:
                 except Exception as e:
                     logger.error(f"Error counting tokens or summarizing: {str(e)}")
 
+                # 2.5. Get engram context if enabled
+                engram_context = ""
+                if enable_context_manager:
+                    try:
+                        engram_context = await self.context_manager.get_context_with_engrams(thread_id)
+                        if engram_context:
+                            logger.info(f"Retrieved engram context for thread {thread_id}: {len(engram_context)} chars")
+                    except Exception as e:
+                        logger.error(f"Error getting engram context: {e}")
+
                 # 3. Prepare messages for LLM call + add temporary message if it exists
                 # Use the working_system_prompt which may contain the XML examples
                 prepared_messages = [working_system_prompt]
+                
+                # Add engram context as the first user message if available
+                if engram_context:
+                    engram_message = {
+                        "role": "user", 
+                        "content": f"[MEMORY CONTEXT]\n{engram_context}\n[END MEMORY CONTEXT]\n\nPlease use this memory context to maintain continuity with our previous conversations."
+                    }
+                    prepared_messages.append(engram_message)
 
                 # Find the last user message index
                 last_user_index = -1

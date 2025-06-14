@@ -1,386 +1,564 @@
 """
-Engram-based Memory Consolidation System for AgentPress.
+Engram Memory Management System.
 
-This module implements a neuroscience-inspired memory consolidation system that creates
-"engrams" (memory chunks) continuously during conversations, tracks their usage patterns,
-and manages their relevance over time.
+A neuroscience-inspired continuous memory consolidation system that creates
+"engrams" (memory chunks) throughout conversations to prevent context window
+overflow and maintain long-term conversational coherence.
 
-Based on BitterBot Memory Research concepts:
-- Continuous micro-consolidations instead of single large summaries
-- Usage-based strengthening (synaptic plasticity analog)
-- Dynamic relevance weighting based on access patterns
-- Surprise/saliency-based memory gating
+Created in collaboration between Victor Michael Gil and Claude.
 """
 
 import json
-import uuid
+import hashlib
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 import asyncio
 from collections import defaultdict
+import numpy as np
 
-from litellm import token_counter
 from services.supabase import DBConnection
 from services.llm import make_llm_api_call
 from utils.logger import logger
+from .engram_metrics import log_engram_created, log_engram_retrieved
 
-# Constants for engram management
-ENGRAM_CHUNK_SIZE = 5000  # Create engram every 5k tokens (more frequent than 10k for real-time needs)
-ENGRAM_SUMMARY_TARGET = 500  # Target tokens for each engram summary
-MIN_MESSAGES_FOR_ENGRAM = 3  # Minimum messages to create an engram
-SURPRISE_THRESHOLD = 0.3  # Confidence threshold for surprise detection
+# Configuration constants
+ENGRAM_CHUNK_SIZE = 5000  # Create engram every 5k tokens
 DECAY_RATE = 0.95  # Daily decay rate for relevance scores
 MAX_ENGRAMS_IN_CONTEXT = 5  # Maximum engrams to include in context
-
-
-class Engram:
-    """Represents a single memory engram (consolidation unit)."""
-    
-    def __init__(self, engram_id: str, thread_id: str, content: str, 
-                 metadata: Dict[str, Any], created_at: datetime):
-        self.id = engram_id
-        self.thread_id = thread_id
-        self.content = content  # Summarized content
-        self.metadata = metadata
-        self.created_at = created_at
-        self.access_count = 0
-        self.last_accessed = created_at
-        self.relevance_score = 1.0
-        self.surprise_score = metadata.get('surprise_score', 0.5)
-        self.token_count = metadata.get('token_count', 0)
-        self.message_range = metadata.get('message_range', {})  # Start/end message IDs
-        
-    def access(self):
-        """Record an access to this engram."""
-        self.access_count += 1
-        self.last_accessed = datetime.now(timezone.utc)
-        # Boost relevance on access (reinforcement)
-        self.relevance_score = min(self.relevance_score * 1.1, 10.0)
-        
-    def decay(self):
-        """Apply time-based decay to relevance score."""
-        days_since_access = (datetime.now(timezone.utc) - self.last_accessed).days
-        self.relevance_score *= (DECAY_RATE ** days_since_access)
-        
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert engram to dictionary for storage."""
-        return {
-            'id': self.id,
-            'thread_id': self.thread_id,
-            'content': self.content,
-            'metadata': self.metadata,
-            'created_at': self.created_at.isoformat(),
-            'access_count': self.access_count,
-            'last_accessed': self.last_accessed.isoformat(),
-            'relevance_score': self.relevance_score,
-            'surprise_score': self.surprise_score,
-            'token_count': self.token_count,
-            'message_range': self.message_range
-        }
+SURPRISE_THRESHOLD = 0.7  # Threshold for surprise-triggered consolidation
+MIN_MESSAGES_FOR_ENGRAM = 3  # Minimum messages to create an engram
+RELEVANCE_BOOST_ON_ACCESS = 0.2  # Boost to relevance when accessed
 
 
 class EngramManager:
-    """Manages creation, retrieval, and evolution of memory engrams."""
+    """
+    Manages the creation, storage, and retrieval of memory engrams.
     
-    def __init__(self, chunk_size: int = ENGRAM_CHUNK_SIZE):
-        """Initialize the EngramManager.
-        
-        Args:
-            chunk_size: Token count threshold for creating new engrams
-        """
+    This system is inspired by how the human brain consolidates memories,
+    creating compressed representations of experience that can be efficiently
+    retrieved when needed.
+    """
+    
+    def __init__(self):
         self.db = DBConnection()
-        self.chunk_size = chunk_size
-        self.active_buffers: Dict[str, List[Dict]] = {}  # thread_id -> messages buffer
-        self.token_counts: Dict[str, int] = {}  # thread_id -> current token count
+        self._consolidation_locks = {}  # Prevent concurrent consolidations
         
-    async def process_message(self, thread_id: str, message: Dict[str, Any], 
-                            force_consolidation: bool = False) -> Optional[Engram]:
-        """Process a new message and potentially create an engram.
+    async def create_engram(
+        self,
+        thread_id: str,
+        messages: List[Dict[str, Any]],
+        trigger: str = "token_threshold",
+        force: bool = False
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Create a new engram from a sequence of messages.
         
         Args:
-            thread_id: The thread ID
-            message: The message to process
-            force_consolidation: Force creation of engram regardless of token count
+            thread_id: Thread to create engram for
+            messages: Messages to consolidate
+            trigger: What triggered creation ("token_threshold", "surprise", "forced")
+            force: Force creation even if below thresholds
             
         Returns:
-            Created engram if consolidation occurred, None otherwise
+            Created engram or None if creation failed/skipped
         """
-        # Initialize buffer if needed
-        if thread_id not in self.active_buffers:
-            self.active_buffers[thread_id] = []
-            self.token_counts[thread_id] = 0
-            
-        # Add message to buffer
-        self.active_buffers[thread_id].append(message)
-        
-        # Count tokens in the message
-        message_tokens = await self._count_message_tokens(message)
-        self.token_counts[thread_id] += message_tokens
-        
-        # Check if we should consolidate
-        should_consolidate = (
-            force_consolidation or 
-            self.token_counts[thread_id] >= self.chunk_size or
-            (len(self.active_buffers[thread_id]) >= MIN_MESSAGES_FOR_ENGRAM and
-             await self._detect_surprise(message))
-        )
-        
-        if should_consolidate:
-            engram = await self._create_engram(thread_id)
-            # Reset buffer and counter
-            self.active_buffers[thread_id] = []
-            self.token_counts[thread_id] = 0
-            return engram
-            
-        return None
-        
-    async def _create_engram(self, thread_id: str) -> Optional[Engram]:
-        """Create an engram from the current buffer."""
-        messages = self.active_buffers.get(thread_id, [])
-        if len(messages) < MIN_MESSAGES_FOR_ENGRAM:
-            logger.debug(f"Not enough messages for engram in thread {thread_id}")
+        # Prevent concurrent consolidations for the same thread
+        if thread_id in self._consolidation_locks:
+            logger.warning(f"Consolidation already in progress for thread {thread_id}")
             return None
             
+        self._consolidation_locks[thread_id] = True
+        
         try:
-            # Generate summary
-            summary = await self._generate_summary(messages)
+            # Validate we have enough messages
+            if len(messages) < MIN_MESSAGES_FOR_ENGRAM and not force:
+                logger.debug(f"Not enough messages for engram: {len(messages)} < {MIN_MESSAGES_FOR_ENGRAM}")
+                return None
+                
+            # Calculate token count (rough estimate)
+            token_count = sum(
+                len(json.dumps(msg).split()) * 1.3  # Rough token estimate
+                for msg in messages
+            )
             
-            # Calculate metadata
-            metadata = {
-                'message_count': len(messages),
-                'token_count': self.token_counts.get(thread_id, 0),
-                'topics': await self._extract_topics(messages),
-                'surprise_score': await self._calculate_surprise_score(messages),
-                'message_range': {
-                    'start': messages[0].get('id'),
-                    'end': messages[-1].get('id')
+            # Generate consolidated summary
+            summary = await self._generate_summary(messages)
+            if not summary:
+                logger.error("Failed to generate engram summary")
+                return None
+                
+            # Calculate surprise score
+            surprise_score = await self._calculate_surprise_score(messages, summary)
+            
+            # Extract topics
+            topics = await self._extract_topics(summary)
+            
+            # Create engram record
+            client = await self.db.client
+            
+            engram_data = {
+                "thread_id": thread_id,
+                "content": summary,
+                "message_range": {
+                    "start": messages[0].get('message_id'),
+                    "end": messages[-1].get('message_id'),
+                    "count": len(messages)
+                },
+                "token_count": int(token_count),
+                "relevance_score": 1.0,  # Start with full relevance
+                "surprise_score": surprise_score,
+                "access_count": 0,
+                "last_accessed": datetime.now(timezone.utc).isoformat(),
+                "metadata": {
+                    "trigger": trigger,
+                    "topics": topics,
+                    "message_types": self._count_message_types(messages),
+                    "has_code": any("```" in str(msg.get('content', '')) for msg in messages),
+                    "has_error": any("error" in str(msg.get('content', '')).lower() for msg in messages)
                 }
             }
             
-            # Create engram
-            engram_id = str(uuid.uuid4())
-            engram = Engram(
-                engram_id=engram_id,
-                thread_id=thread_id,
-                content=summary,
-                metadata=metadata,
-                created_at=datetime.now(timezone.utc)
+            result = await client.table('engrams').insert(engram_data).execute()
+            
+            if result.data:
+                engram = result.data[0]
+                compression_ratio = token_count / len(summary.split())
+                
+                # Log metrics
+                await log_engram_created(
+                    engram_id=engram['id'],
+                    thread_id=thread_id,
+                    trigger=trigger,
+                    message_count=len(messages),
+                    token_count=int(token_count),
+                    surprise_score=surprise_score,
+                    topics=topics,
+                    compression_ratio=compression_ratio
+                )
+                
+                logger.info(
+                    f"Created engram {engram['id']} for thread {thread_id}: "
+                    f"{len(messages)} messages, {token_count:.0f} tokens compressed to "
+                    f"{len(summary.split())} words (ratio: {compression_ratio:.1f}:1)"
+                )
+                
+                # Broadcast to dashboard for real-time visualization
+                try:
+                    from agentpress.engram_broadcaster import broadcast_engram_created
+                    await broadcast_engram_created(engram)
+                except Exception as e:
+                    logger.debug(f"Could not broadcast engram creation: {e}")
+                
+                return engram
+            else:
+                logger.error("Failed to insert engram into database")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error creating engram: {e}", exc_info=True)
+            return None
+        finally:
+            # Release lock
+            self._consolidation_locks.pop(thread_id, None)
+            
+    async def _generate_summary(self, messages: List[Dict[str, Any]]) -> Optional[str]:
+        """Generate a concise summary of the messages."""
+        try:
+            # Build conversation text
+            conversation = []
+            for msg in messages:
+                content = msg.get('content', {})
+                if isinstance(content, str):
+                    try:
+                        content = json.loads(content)
+                    except:
+                        content = {'content': content}
+                
+                role = content.get('role', msg.get('type', 'unknown'))
+                text = content.get('content', '')
+                
+                if text:
+                    conversation.append(f"{role.upper()}: {text[:500]}...")  # Truncate long messages
+                    
+            conversation_text = "\n\n".join(conversation[-10:])  # Last 10 messages max
+            
+            # Create summary prompt
+            system_prompt = """You are a memory consolidation system. Create a concise summary that captures:
+1. The main topic(s) discussed
+2. Key decisions made or conclusions reached
+3. Important technical details (errors, solutions, code snippets)
+4. Emotional tone or user preferences expressed
+5. Any unresolved questions or next steps
+
+Be specific and factual. This summary will be used to maintain context in future conversations."""
+
+            user_prompt = f"""Summarize this conversation segment into a memory engram (max 200 words):
+
+{conversation_text}
+
+SUMMARY:"""
+
+            messages_for_llm = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+            
+            # Use a fast model for summarization
+            response = await make_llm_api_call(
+                messages=messages_for_llm,
+                model_name="gpt-4o-mini",
+                max_tokens=300,
+                temperature=0.3
             )
             
-            # Store in database
-            await self._store_engram(engram)
-            
-            logger.info(f"Created engram {engram_id} for thread {thread_id} with {len(messages)} messages")
-            return engram
-            
+            if response and response.get('choices'):
+                summary = response['choices'][0]['message']['content'].strip()
+                return summary
+            else:
+                logger.error("No response from LLM for summary generation")
+                return None
+                
         except Exception as e:
-            logger.error(f"Error creating engram for thread {thread_id}: {e}")
+            logger.error(f"Error generating summary: {e}", exc_info=True)
             return None
             
-    async def retrieve_relevant_engrams(self, thread_id: str, query: str, 
-                                      limit: int = MAX_ENGRAMS_IN_CONTEXT) -> List[Engram]:
-        """Retrieve most relevant engrams for a query.
-        
-        Uses a combination of:
-        - Semantic similarity (if vector store available)
-        - Recency
-        - Relevance score (access patterns)
-        - Topic matching
+    async def _calculate_surprise_score(self, messages: List[Dict[str, Any]], summary: str) -> float:
         """
+        Calculate how surprising/important this content is.
+        Higher scores indicate content that should be prioritized for retention.
+        """
+        try:
+            # Factors that increase surprise:
+            surprise_factors = 0.0
+            
+            # 1. Sudden topic shifts
+            topics = set()
+            for msg in messages:
+                content = str(msg.get('content', '')).lower()
+                # Simple topic detection based on keywords
+                if 'error' in content or 'exception' in content:
+                    topics.add('error')
+                if 'implement' in content or 'create' in content:
+                    topics.add('implementation')
+                if '?' in content:
+                    topics.add('question')
+                if '!' in content:
+                    topics.add('exclamation')
+                    
+            topic_diversity = len(topics) / max(len(messages), 1)
+            surprise_factors += topic_diversity * 0.3
+            
+            # 2. Emotional intensity (exclamations, capitals)
+            emotional_intensity = sum(
+                content.count('!') + (1 if content.isupper() else 0)
+                for msg in messages
+                for content in [str(msg.get('content', ''))]
+            ) / max(len(messages), 1)
+            surprise_factors += min(emotional_intensity * 0.2, 0.3)
+            
+            # 3. Code or technical content
+            has_code = any('```' in str(msg.get('content', '')) for msg in messages)
+            if has_code:
+                surprise_factors += 0.2
+                
+            # 4. Error or problem-solving
+            has_error = any('error' in str(msg.get('content', '')).lower() for msg in messages)
+            if has_error:
+                surprise_factors += 0.2
+                
+            # 5. Long messages (information density)
+            avg_length = sum(len(str(msg.get('content', ''))) for msg in messages) / max(len(messages), 1)
+            if avg_length > 500:
+                surprise_factors += 0.1
+                
+            return min(surprise_factors, 1.0)
+            
+        except Exception as e:
+            logger.error(f"Error calculating surprise score: {e}")
+            return 0.5  # Default middle value
+            
+    async def _extract_topics(self, summary: str) -> List[str]:
+        """Extract key topics from the summary."""
+        try:
+            # Simple keyword extraction
+            keywords = []
+            
+            # Technical terms
+            tech_terms = ['api', 'database', 'function', 'error', 'implementation', 
+                         'bug', 'feature', 'performance', 'memory', 'token']
+            for term in tech_terms:
+                if term in summary.lower():
+                    keywords.append(term)
+                    
+            # Action words
+            action_words = ['create', 'implement', 'fix', 'debug', 'optimize', 
+                           'design', 'build', 'deploy']
+            for word in action_words:
+                if word in summary.lower():
+                    keywords.append(word)
+                    
+            # Limit to top 5 topics
+            return keywords[:5]
+            
+        except Exception as e:
+            logger.error(f"Error extracting topics: {e}")
+            return []
+            
+    def _count_message_types(self, messages: List[Dict[str, Any]]) -> Dict[str, int]:
+        """Count the types of messages in this segment."""
+        type_counts = defaultdict(int)
+        for msg in messages:
+            msg_type = msg.get('type', 'unknown')
+            type_counts[msg_type] += 1
+        return dict(type_counts)
+        
+    async def retrieve_relevant_engrams(
+        self,
+        thread_id: str,
+        query_context: Optional[str] = None,
+        limit: int = MAX_ENGRAMS_IN_CONTEXT
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieve the most relevant engrams for the current context.
+        
+        Uses a combination of recency, relevance scores, and semantic similarity
+        to select the best engrams to include in context.
+        """
+        start_time = datetime.now(timezone.utc)
+        
         try:
             client = await self.db.client
             
-            # For now, use a simple query - in production, use vector similarity
+            # Get all active engrams for thread
             result = await client.table('engrams').select('*').eq(
                 'thread_id', thread_id
-            ).order('relevance_score', desc=True).limit(limit * 2).execute()
+            ).eq('is_deleted', False).execute()
             
             if not result.data:
                 return []
                 
-            # Convert to Engram objects and apply decay
-            engrams = []
-            for data in result.data:
-                engram = self._engram_from_dict(data)
-                engram.decay()  # Apply time-based decay
-                engrams.append(engram)
+            engrams = result.data
+            total_available = len(engrams)
+            
+            # Apply decay to relevance scores
+            now = datetime.now(timezone.utc)
+            for engram in engrams:
+                created = datetime.fromisoformat(engram['created_at'])
+                days_old = (now - created).days
                 
-            # Sort by combined score (relevance * recency factor)
-            engrams.sort(key=lambda e: e.relevance_score, reverse=True)
-            
-            # Return top N
-            selected = engrams[:limit]
-            
-            # Record access for selected engrams
-            for engram in selected:
-                engram.access()
-                await self._update_engram_access(engram)
+                # Apply exponential decay
+                decayed_relevance = engram['relevance_score'] * (DECAY_RATE ** days_old)
+                engram['current_relevance'] = decayed_relevance
                 
-            return selected
+            # Score engrams for retrieval
+            scored_engrams = []
+            for engram in engrams:
+                score = self._calculate_retrieval_score(engram, query_context)
+                scored_engrams.append((score, engram))
+                
+            # Sort by score and take top N
+            scored_engrams.sort(key=lambda x: x[0], reverse=True)
+            selected_engrams = [engram for score, engram in scored_engrams[:limit]]
             
-        except Exception as e:
-            logger.error(f"Error retrieving engrams: {e}")
-            return []
-            
-    async def get_thread_engram_summary(self, thread_id: str) -> str:
-        """Get a high-level summary of all engrams for a thread."""
-        engrams = await self.retrieve_relevant_engrams(thread_id, "", limit=20)
-        
-        if not engrams:
-            return "No memory consolidations available for this conversation."
-            
-        summary_parts = [
-            f"Memory consolidations from this conversation ({len(engrams)} engrams):",
-            ""
-        ]
-        
-        for i, engram in enumerate(engrams[:10], 1):  # Show top 10
-            summary_parts.append(f"{i}. {engram.content[:100]}...")
-            
-        return "\n".join(summary_parts)
-        
-    async def _generate_summary(self, messages: List[Dict]) -> str:
-        """Generate a concise summary of messages."""
-        # Format messages for summarization
-        formatted_messages = []
-        for msg in messages:
-            role = msg.get('type', 'unknown')
-            content = json.loads(msg.get('content', '{}')).get('content', '')
-            formatted_messages.append(f"{role.upper()}: {content}")
-            
-        conversation_text = "\n".join(formatted_messages)
-        
-        system_prompt = """You are a memory consolidation system inspired by neuroscience.
-Your task is to create a concise "engram" (memory consolidation) from a conversation segment.
-
-Focus on:
-1. Key decisions, conclusions, or insights
-2. Important facts or information exchanged
-3. Problems solved or questions answered
-4. Emotional significance or surprising elements
-5. Action items or future references
-
-Be extremely concise (aim for 2-3 sentences max) but preserve essential information.
-Write in a way that would help someone quickly understand what happened in this conversation segment."""
-        
-        try:
-            response = await make_llm_api_call(
-                model_name="openai/gpt-4o-mini",  # Fast, cheap model for summaries
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Create an engram from:\n\n{conversation_text}"}
-                ],
-                temperature=0.3,
-                max_tokens=ENGRAM_SUMMARY_TARGET
+            # Update access counts and last accessed
+            for engram in selected_engrams:
+                await client.table('engrams').update({
+                    'access_count': engram['access_count'] + 1,
+                    'relevance_score': min(engram['relevance_score'] + RELEVANCE_BOOST_ON_ACCESS, 5.0),
+                    'last_accessed': now.isoformat()
+                }).eq('id', engram['id']).execute()
+                
+            # Log retrieval metrics
+            retrieval_time_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            await log_engram_retrieved(
+                thread_id=thread_id,
+                query_tokens=len(query_context.split()) if query_context else 0,
+                retrieved_engrams=selected_engrams,
+                total_available=total_available,
+                retrieval_time_ms=retrieval_time_ms
             )
             
-            if response and hasattr(response, 'choices') and response.choices:
-                return response.choices[0].message.content.strip()
-            else:
-                return "Failed to generate summary"
-                
+            logger.debug(
+                f"Retrieved {len(selected_engrams)} engrams from {total_available} available "
+                f"for thread {thread_id} in {retrieval_time_ms:.1f}ms"
+            )
+            
+            return selected_engrams
+            
         except Exception as e:
-            logger.error(f"Error generating engram summary: {e}")
-            return "Error creating memory consolidation"
+            logger.error(f"Error retrieving engrams: {e}", exc_info=True)
+            return []
             
-    async def _extract_topics(self, messages: List[Dict]) -> List[str]:
-        """Extract main topics from messages."""
-        # Simple implementation - in production, use NLP/embedding clustering
-        topics = set()
+    def _calculate_retrieval_score(self, engram: Dict[str, Any], query_context: Optional[str]) -> float:
+        """
+        Calculate a retrieval score for an engram based on multiple factors.
         
-        for msg in messages:
-            content = json.loads(msg.get('content', '{}')).get('content', '').lower()
-            # Look for common topic indicators
-            if 'code' in content or 'programming' in content:
-                topics.add('coding')
-            if 'error' in content or 'bug' in content:
-                topics.add('debugging')
-            if 'design' in content or 'ui' in content:
-                topics.add('design')
-            # Add more topic detection as needed
+        Factors considered:
+        1. Current relevance (with decay applied)
+        2. Surprise score (important moments)
+        3. Access frequency (Hebbian learning)
+        4. Recency bonus
+        5. Semantic similarity to query (if provided)
+        """
+        score = 0.0
+        
+        # 1. Current relevance (40% weight)
+        score += engram.get('current_relevance', 0) * 0.4
+        
+        # 2. Surprise score (20% weight) - important moments
+        score += engram.get('surprise_score', 0) * 0.2
+        
+        # 3. Access frequency (20% weight) - frequently accessed = important
+        # Normalize by log to prevent runaway scores
+        access_score = min(np.log1p(engram.get('access_count', 0)) / 3, 1.0)
+        score += access_score * 0.2
+        
+        # 4. Recency bonus (10% weight)
+        created = datetime.fromisoformat(engram['created_at'])
+        hours_old = (datetime.now(timezone.utc) - created).total_seconds() / 3600
+        recency_score = max(0, 1 - (hours_old / 168))  # Decay over a week
+        score += recency_score * 0.1
+        
+        # 5. Semantic similarity (10% weight) if query provided
+        if query_context and query_context.strip():
+            similarity = self._calculate_simple_similarity(engram['content'], query_context)
+            score += similarity * 0.1
             
-        return list(topics)
+        return score
         
-    async def _calculate_surprise_score(self, messages: List[Dict]) -> float:
-        """Calculate surprise score based on message patterns."""
-        # Placeholder - in production, use model confidence scores
-        # High surprise = unexpected content, errors, new topics
+    def _calculate_simple_similarity(self, text1: str, text2: str) -> float:
+        """
+        Calculate simple keyword-based similarity between texts.
         
-        surprise_indicators = ['error', 'unexpected', 'strange', 'wow', 'interesting', 'oh', '!']
-        surprise_count = 0
+        In a production system, this would use embeddings, but for now
+        we use keyword overlap.
+        """
+        # Convert to lowercase and split into words
+        words1 = set(text1.lower().split())
+        words2 = set(text2.lower().split())
         
-        for msg in messages:
-            content = json.loads(msg.get('content', '{}')).get('content', '').lower()
-            for indicator in surprise_indicators:
-                if indicator in content:
-                    surprise_count += 1
+        # Remove common words
+        stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 
+                    'to', 'for', 'of', 'with', 'by', 'from', 'is', 'was', 'are', 'were'}
+        words1 = words1 - stopwords
+        words2 = words2 - stopwords
+        
+        if not words1 or not words2:
+            return 0.0
+            
+        # Jaccard similarity
+        intersection = len(words1 & words2)
+        union = len(words1 | words2)
+        
+        return intersection / union if union > 0 else 0.0
+        
+    async def check_and_consolidate(
+        self,
+        thread_id: str,
+        current_token_count: int,
+        recent_messages: List[Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Check if consolidation is needed and perform it if necessary.
+        
+        This is the main entry point called by the context manager.
+        """
+        try:
+            # Check if we've hit the token threshold
+            if current_token_count >= ENGRAM_CHUNK_SIZE:
+                logger.info(f"Token threshold reached for thread {thread_id}: {current_token_count} tokens")
+                return await self.create_engram(
+                    thread_id=thread_id,
+                    messages=recent_messages,
+                    trigger="token_threshold"
+                )
+                
+            # Check for surprise-triggered consolidation
+            if len(recent_messages) >= MIN_MESSAGES_FOR_ENGRAM:
+                # Quick surprise check on recent messages
+                surprise = await self._calculate_surprise_score(recent_messages, "")
+                if surprise >= SURPRISE_THRESHOLD:
+                    logger.info(f"Surprise threshold reached for thread {thread_id}: score={surprise:.2f}")
+                    return await self.create_engram(
+                        thread_id=thread_id,
+                        messages=recent_messages,
+                        trigger="surprise"
+                    )
                     
-        # Normalize to 0-1 range
-        return min(surprise_count / (len(messages) * 2), 1.0)
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error in check_and_consolidate: {e}", exc_info=True)
+            return None
+            
+    async def get_context_summary(self, thread_id: str) -> str:
+        """
+        Get a formatted summary of relevant engrams for inclusion in context.
         
-    async def _detect_surprise(self, message: Dict) -> bool:
-        """Detect if a message represents surprising/important information."""
-        content = json.loads(message.get('content', '{}')).get('content', '').lower()
+        This is what actually gets injected into the conversation context.
+        """
+        try:
+            engrams = await self.retrieve_relevant_engrams(thread_id)
+            
+            if not engrams:
+                return ""
+                
+            # Format engrams for context
+            summary_parts = ["# Previous Context\n"]
+            
+            for i, engram in enumerate(engrams, 1):
+                created = datetime.fromisoformat(engram['created_at'])
+                age = (datetime.now(timezone.utc) - created).days
+                
+                summary_parts.append(f"## Memory {i} ({age} days ago)")
+                summary_parts.append(engram['content'])
+                
+                # Add metadata if relevant
+                metadata = engram.get('metadata', {})
+                if metadata.get('has_error'):
+                    summary_parts.append("*Note: This memory contains error handling context*")
+                if metadata.get('has_code'):
+                    summary_parts.append("*Note: This memory contains code examples*")
+                    
+                summary_parts.append("")  # Blank line
+                
+            return "\n".join(summary_parts)
+            
+        except Exception as e:
+            logger.error(f"Error getting context summary: {e}", exc_info=True)
+            return ""
+            
+    async def cleanup_old_engrams(self, days_to_keep: int = 30) -> int:
+        """
+        Soft delete engrams older than specified days with very low relevance.
         
-        # Simple heuristic - in production, use model uncertainty
-        surprise_indicators = ['error', 'failed', 'unexpected', 'never seen', 'strange']
-        
-        return any(indicator in content for indicator in surprise_indicators)
-        
-    async def _count_message_tokens(self, message: Dict) -> int:
-        """Count tokens in a message."""
-        content = json.loads(message.get('content', '{}')).get('content', '')
-        # Use litellm token counter
-        return token_counter(model="gpt-4", messages=[{"role": "user", "content": content}])
-        
-    async def _store_engram(self, engram: Engram):
-        """Store engram in database."""
-        client = await self.db.client
-        
-        await client.table('engrams').insert(engram.to_dict()).execute()
-        
-    async def _update_engram_access(self, engram: Engram):
-        """Update engram access statistics in database."""
-        client = await self.db.client
-        
-        await client.table('engrams').update({
-            'access_count': engram.access_count,
-            'last_accessed': engram.last_accessed.isoformat(),
-            'relevance_score': engram.relevance_score
-        }).eq('id', engram.id).execute()
-        
-    def _engram_from_dict(self, data: Dict) -> Engram:
-        """Create Engram object from database record."""
-        engram = Engram(
-            engram_id=data['id'],
-            thread_id=data['thread_id'],
-            content=data['content'],
-            metadata=data.get('metadata', {}),
-            created_at=datetime.fromisoformat(data['created_at'])
-        )
-        engram.access_count = data.get('access_count', 0)
-        engram.last_accessed = datetime.fromisoformat(data.get('last_accessed', data['created_at']))
-        engram.relevance_score = data.get('relevance_score', 1.0)
-        engram.surprise_score = data.get('surprise_score', 0.5)
-        engram.token_count = data.get('token_count', 0)
-        engram.message_range = data.get('message_range', {})
-        
-        return engram
-        
-    async def cleanup_old_engrams(self, days_threshold: int = 30, 
-                                relevance_threshold: float = 0.1):
-        """Clean up old, low-relevance engrams."""
+        Returns number of engrams cleaned up.
+        """
         try:
             client = await self.db.client
-            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_threshold)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_to_keep)
             
-            # Delete engrams that are both old and low relevance
-            result = await client.table('engrams').delete().lt(
-                'relevance_score', relevance_threshold
-            ).lt('last_accessed', cutoff_date.isoformat()).execute()
+            # Only delete engrams that are old AND have low relevance
+            result = await client.table('engrams').update({
+                'is_deleted': True
+            }).lt('created_at', cutoff_date.isoformat()).lt('relevance_score', 0.1).execute()
             
-            if result.data:
-                logger.info(f"Cleaned up {len(result.data)} old engrams")
-                
+            count = len(result.data) if result.data else 0
+            logger.info(f"Cleaned up {count} old engrams")
+            
+            return count
+            
         except Exception as e:
-            logger.error(f"Error cleaning up engrams: {e}")
+            logger.error(f"Error cleaning up engrams: {e}", exc_info=True)
+            return 0
+
+
+# Singleton instance
+_engram_manager = None
+
+def get_engram_manager() -> EngramManager:
+    """Get or create the singleton EngramManager instance."""
+    global _engram_manager
+    if _engram_manager is None:
+        _engram_manager = EngramManager()
+    return _engram_manager
