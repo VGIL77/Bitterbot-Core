@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException, Response, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 import sentry
 from contextlib import asynccontextmanager
 from agentpress.thread_manager import ThreadManager
@@ -144,6 +145,60 @@ from mcp_local import api as mcp_api
 app.include_router(mcp_api.router, prefix="/api")
 
 app.include_router(transcription_api.router, prefix="/api")
+
+# Mount the ENGRAM dashboard
+import os
+if os.path.exists("engram_dashboard"):
+    app.mount("/engram_dashboard", StaticFiles(directory="engram_dashboard", html=True), name="engram_dashboard")
+    logger.info("ENGRAM dashboard mounted at /engram_dashboard")
+
+# Engram API endpoints for dashboard
+from agentpress.engram_metrics import ExperienceMetrics
+from admin_console.auth import require_admin_auth, admin_login_handler
+
+@app.post("/api/admin/login")
+async def admin_login(request: Request):
+    """Admin login endpoint for dashboard access."""
+    return await admin_login_handler(request)
+
+@app.get("/api/engrams/metrics")
+async def get_engram_metrics(thread_id: str = None, request: Request = Depends(require_admin_auth)):
+    """Get engram metrics for dashboard."""
+    metrics = ExperienceMetrics()
+    if thread_id:
+        return await metrics.log_metrics_snapshot(thread_id)
+    else:
+        return await metrics.get_system_wide_metrics()
+
+@app.get("/api/engrams/threads")
+async def get_engram_threads(request: Request = Depends(require_admin_auth)):
+    """Get list of threads with engrams."""
+    db = DBConnection()
+    client = await db.client
+    result = await client.table('engrams').select('thread_id').execute()
+    thread_ids = list(set(row['thread_id'] for row in result.data))
+    return {
+        'threads': thread_ids,
+        'count': len(thread_ids)
+    }
+
+@app.get("/api/engrams/{thread_id}/history")
+async def get_engram_history(thread_id: str, limit: int = 100, request: Request = Depends(require_admin_auth)):
+    """Get engram history for a thread."""
+    db = DBConnection()
+    client = await db.client
+    result = await client.table('engrams')\
+        .select('*')\
+        .eq('thread_id', thread_id)\
+        .order('created_at', desc=True)\
+        .limit(limit)\
+        .execute()
+    
+    return {
+        'thread_id': thread_id,
+        'engrams': result.data,
+        'count': len(result.data)
+    }
 
 @app.get("/api/health")
 async def health_check():
