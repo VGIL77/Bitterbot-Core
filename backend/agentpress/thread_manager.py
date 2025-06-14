@@ -108,14 +108,6 @@ class ThreadManager:
             # Add returning='representation' to get the inserted row data including the id
             result = await client.table('messages').insert(data_to_insert, returning='representation').execute()
             logger.info(f"Successfully added message to thread {thread_id}")
-            
-            # Process message for engram creation if it's a user or assistant message
-            if type in ['user', 'assistant'] and is_llm_message:
-                try:
-                    await self.context_manager.process_message_for_engrams(thread_id, data_to_insert)
-                except Exception as e:
-                    logger.error(f"Error processing message for engrams: {e}")
-                    # Don't fail the whole operation if engram processing fails
 
             if result.data and len(result.data) > 0 and isinstance(result.data[0], dict) and 'message_id' in result.data[0]:
                 return result.data[0]
@@ -316,27 +308,10 @@ Here are the XML tools available with examples:
                 except Exception as e:
                     logger.error(f"Error counting tokens or summarizing: {str(e)}")
 
-                # 2.5. Get engram context if enabled
-                engram_context = ""
-                if enable_context_manager:
-                    try:
-                        engram_context = await self.context_manager.get_context_with_engrams(thread_id)
-                        if engram_context:
-                            logger.info(f"Retrieved engram context for thread {thread_id}: {len(engram_context)} chars")
-                    except Exception as e:
-                        logger.error(f"Error getting engram context: {e}")
 
                 # 3. Prepare messages for LLM call + add temporary message if it exists
                 # Use the working_system_prompt which may contain the XML examples
                 prepared_messages = [working_system_prompt]
-                
-                # Add engram context as the first user message if available
-                if engram_context:
-                    engram_message = {
-                        "role": "user", 
-                        "content": f"[MEMORY CONTEXT]\n{engram_context}\n[END MEMORY CONTEXT]\n\nPlease use this memory context to maintain continuity with our previous conversations."
-                    }
-                    prepared_messages.append(engram_message)
 
                 # Find the last user message index
                 last_user_index = -1

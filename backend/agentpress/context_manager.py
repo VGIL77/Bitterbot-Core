@@ -3,9 +3,6 @@ Context Management for AgentPress Threads.
 
 This module handles token counting and thread summarization to prevent
 reaching the context window limitations of LLM models.
-
-Now enhanced with engram-based memory consolidation for continuous
-micro-consolidations instead of single large summaries.
 """
 
 import json
@@ -15,13 +12,11 @@ from litellm import token_counter, completion_cost
 from services.supabase import DBConnection
 from services.llm import make_llm_api_call
 from utils.logger import logger
-from .engram_manager import EngramManager, ENGRAM_CHUNK_SIZE
 
 # Constants for token management
-DEFAULT_TOKEN_THRESHOLD = 80000  # Lowered to 80k to prevent hitting 200k limit
+DEFAULT_TOKEN_THRESHOLD = 120000  # Set to 120k for maximum context usage
 SUMMARY_TARGET_TOKENS = 10000    # Target ~10k tokens for the summary message
 RESERVE_TOKENS = 5000            # Reserve tokens for new messages
-ENGRAM_INTEGRATION_ENABLED = True  # Feature flag for gradual rollout
 
 class ContextManager:
     """Manages thread context including token counting and summarization."""
@@ -34,9 +29,6 @@ class ContextManager:
         """
         self.db = DBConnection()
         self.token_threshold = token_threshold
-        self._engram_manager = None
-        self._recent_messages = {}  # Track recent messages per thread
-        self._message_token_counts = {}  # Track token counts per thread
     
     async def get_thread_token_count(self, thread_id: str) -> int:
         """Get the current token count for a thread using LiteLLM.
@@ -305,70 +297,3 @@ The above is a summary of the conversation history. The conversation continues b
             logger.error(f"Error in check_and_summarize_if_needed: {str(e)}", exc_info=True)
             return False
     
-    @property
-    def engram_manager(self):
-        """Lazy load the engram manager."""
-        if self._engram_manager is None and ENGRAM_INTEGRATION_ENABLED:
-            from .engram_manager import get_engram_manager
-            self._engram_manager = get_engram_manager()
-        return self._engram_manager
-    
-    async def process_message_for_engrams(self, thread_id: str, message: Dict[str, Any]) -> None:
-        """Process a new message for potential engram creation.
-        
-        This method tracks messages and triggers engram creation when thresholds are met.
-        
-        Args:
-            thread_id: Thread ID the message belongs to
-            message: The message data
-        """
-        if not ENGRAM_INTEGRATION_ENABLED or not self.engram_manager:
-            return
-            
-        try:
-            # Initialize tracking for this thread if needed
-            if thread_id not in self._recent_messages:
-                self._recent_messages[thread_id] = []
-                self._message_token_counts[thread_id] = 0
-            
-            # Add message to recent messages
-            self._recent_messages[thread_id].append(message)
-            
-            # Estimate tokens for this message
-            message_text = json.dumps(message.get('content', ''))
-            message_tokens = len(message_text.split()) * 1.3  # Rough estimate
-            self._message_token_counts[thread_id] += message_tokens
-            
-            # Check if we should consolidate
-            await self.engram_manager.check_and_consolidate(
-                thread_id=thread_id,
-                current_token_count=int(self._message_token_counts[thread_id]),
-                recent_messages=self._recent_messages[thread_id]
-            )
-            
-            # If consolidation happened, it will reset our tracking
-            # Check if we need to reset (this is a simple heuristic)
-            if self._message_token_counts[thread_id] >= 5000:
-                self._recent_messages[thread_id] = []
-                self._message_token_counts[thread_id] = 0
-                
-        except Exception as e:
-            logger.error(f"Error processing message for engrams: {e}", exc_info=True)
-    
-    async def get_context_with_engrams(self, thread_id: str) -> str:
-        """Get engram context summary for a thread.
-        
-        Args:
-            thread_id: Thread ID to get engrams for
-            
-        Returns:
-            Formatted engram context or empty string
-        """
-        if not ENGRAM_INTEGRATION_ENABLED or not self.engram_manager:
-            return ""
-            
-        try:
-            return await self.engram_manager.get_context_summary(thread_id)
-        except Exception as e:
-            logger.error(f"Error getting engram context: {e}", exc_info=True)
-            return ""
