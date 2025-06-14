@@ -1,0 +1,35 @@
+# Ignore backend directory
+backend/
+admin_console/
+supabase/
+
+# Ignore other non-frontend directories
+docs/
+bitterbot/
+engram_dashboard/
+mcp_local/
+sandbox/
+services/
+utils/
+
+# Ignore Python files
+*.py
+*.pyc
+__pycache__/
+.venv/
+venv/
+poetry.lock
+pyproject.toml
+requirements.txt
+
+# Ignore Docker files
+docker-compose.yml
+docker-compose.prod.yml
+Dockerfile
+
+# Ignore other config files
+mise.toml
+MANIFEST.in
+
+# Keep only frontend directory
+!frontend/
