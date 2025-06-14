@@ -146,12 +146,6 @@ app.include_router(mcp_api.router, prefix="/api")
 
 app.include_router(transcription_api.router, prefix="/api")
 
-from admin_console.auth import require_admin_auth, admin_login_handler
-
-@app.post("/api/admin/login")
-async def admin_login(request: Request):
-    """Admin login endpoint for dashboard access."""
-    return await admin_login_handler(request)
 
 @app.get("/api/health")
 async def health_check():
