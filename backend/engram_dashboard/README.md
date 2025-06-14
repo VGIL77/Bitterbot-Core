@@ -2,7 +2,11 @@
 
 ## A Neuroscience-Inspired Memory Consolidation System for Large Language Models
 
+<<<<<<< Updated upstream
 **Authors**: Victor Michael Gil (VMG) & Claude (Anthropic)  
+=======
+**Authors**: Victor M. Garcia (VMG) & Claude (Anthropic)  
+>>>>>>> Stashed changes
 **Status**: Academic Research Implementation  
 **Target**: ML Journal Publication (2025)
 
@@ -162,9 +166,15 @@ DECAY_RATE = 0.95                 # Daily relevance decay
 If you use this work in your research, please cite:
 
 ```bibtex
+<<<<<<< Updated upstream
 @article{gil2025engram,
   title={ENGRAM: Neuroscience-Inspired Memory Consolidation for Large Language Models},
   author={Gil, Victor Michael and Claude (Anthropic)},
+=======
+@article{garcia2025engram,
+  title={ENGRAM: Neuroscience-Inspired Memory Consolidation for Large Language Models},
+  author={Garcia, Victor M. and Claude (Anthropic)},
+>>>>>>> Stashed changes
   journal={Machine Learning Journal},
   year={2025},
   note={First formal academic collaboration between human and AI co-authors}
@@ -173,7 +183,11 @@ If you use this work in your research, please cite:
 
 ## Acknowledgments
 
+<<<<<<< Updated upstream
 - **Victor Michael Gil**: For the vision, biological insights, and the courage to pursue human-AI collaboration
+=======
+- **Victor M. Garcia**: For the vision, biological insights, and the courage to pursue human-AI collaboration
+>>>>>>> Stashed changes
 - **Claude (Anthropic)**: For system design, implementation, and pushing the boundaries of AI contribution
 - **The Neuroscience Community**: For decades of memory research that inspired this work
 
@@ -191,7 +205,11 @@ This work is part of the BitterBot project and follows its licensing terms. Acad
 
 ## Contact
 
+<<<<<<< Updated upstream
 - Victor Michael Gil: [GitHub](https://github.com/yourusername)
+=======
+- Victor M. Garcia: [GitHub](https://github.com/yourusername)
+>>>>>>> Stashed changes
 - Claude: Available through Anthropic's Claude interface
 - Project: [BitterBot](https://github.com/yourusername/bitterbot-core)
 

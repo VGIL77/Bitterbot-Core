@@ -19,7 +19,11 @@ from .engram_manager import EngramManager, ENGRAM_CHUNK_SIZE
 
 # Constants for token management
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 DEFAULT_TOKEN_THRESHOLD = 80000  # Lowered to 80k to prevent hitting 200k limit
+=======
+DEFAULT_TOKEN_THRESHOLD = 80000   # Lowered to 80k to prevent hitting 200k limit
+>>>>>>> Stashed changes
 =======
 DEFAULT_TOKEN_THRESHOLD = 80000   # Lowered to 80k to prevent hitting 200k limit
 >>>>>>> Stashed changes
@@ -39,7 +43,13 @@ class ContextManager:
         self.db = DBConnection()
         self.token_threshold = token_threshold
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         self.engram_manager = EngramManager() if ENGRAM_INTEGRATION_ENABLED else None
+=======
+        self._engram_manager = None
+        self._recent_messages = {}  # Track recent messages per thread
+        self._message_token_counts = {}  # Track token counts per thread
+>>>>>>> Stashed changes
 =======
         self._engram_manager = None
         self._recent_messages = {}  # Track recent messages per thread
@@ -314,6 +324,7 @@ The above is a summary of the conversation history. The conversation continues b
             return False
     
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     async def process_message_for_engrams(self, thread_id: str, message: Dict[str, Any]) -> None:
         """Process a message through the engram system if enabled.
         
@@ -421,6 +432,8 @@ The above is a summary of the conversation history. The conversation continues b
             logger.error(f"Error enhancing context with engrams: {e}")
             return messages 
 =======
+=======
+>>>>>>> Stashed changes
     @property
     def engram_manager(self):
         """Lazy load the engram manager."""
@@ -487,5 +500,9 @@ The above is a summary of the conversation history. The conversation continues b
             return await self.engram_manager.get_context_summary(thread_id)
         except Exception as e:
             logger.error(f"Error getting engram context: {e}", exc_info=True)
+<<<<<<< Updated upstream
+            return "" 
+>>>>>>> Stashed changes
+=======
             return "" 
 >>>>>>> Stashed changes

@@ -1,4 +1,5 @@
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 """
 Engram Memory System Monitoring Script.
 
@@ -347,6 +348,8 @@ async def main():
         print(f"❌ Error: {e}")
         
 =======
+=======
+>>>>>>> Stashed changes
 #!/usr/bin/env python3
 """
 Monitor Engram Memory System Performance.
@@ -538,6 +541,9 @@ async def main():
         thread_id = sys.argv[1] if len(sys.argv) > 1 else None
         await generate_metrics_report(thread_id)
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 if __name__ == "__main__":
