@@ -28,7 +28,6 @@ from agentpress.engram_metrics import ExperienceMetrics
 from services.supabase import DBConnection
 from utils.logger import logger
 
-<<<<<<< Updated upstream
 # Import admin authentication
 sys.path.append(str(Path(__file__).parent.parent))
 try:
@@ -40,12 +39,6 @@ except ImportError:
     # Dummy decorator if auth not available
     def require_admin_auth(handler):
         return handler
-
-=======
->>>>>>> Stashed changes
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 class EngramObservatoryServer:
@@ -95,7 +88,6 @@ class EngramObservatoryServer:
             name='dashboard'
         )
         
-<<<<<<< Updated upstream
         # API endpoints (protected with auth)
         self.app.router.add_get('/api/engrams/metrics', require_admin_auth(self.get_metrics))
         self.app.router.add_get('/api/engrams/threads', require_admin_auth(self.get_threads))
@@ -105,13 +97,6 @@ class EngramObservatoryServer:
         # Auth endpoints
         if AUTH_ENABLED:
             self.app.router.add_post('/api/admin/login', admin_login_handler)
-=======
-        # API endpoints
-        self.app.router.add_get('/api/engrams/metrics', self.get_metrics)
-        self.app.router.add_get('/api/engrams/threads', self.get_threads)
-        self.app.router.add_get('/api/engrams/{thread_id}/history', self.get_thread_history)
-        self.app.router.add_post('/api/events', self.handle_event)
->>>>>>> Stashed changes
         
         # Health check
         self.app.router.add_get('/health', self.health_check)
