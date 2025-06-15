@@ -45,6 +45,8 @@ async def run_agent(
     model_name: str = "anthropic/claude-3-7-sonnet-latest",
     enable_thinking: Optional[bool] = False,
     reasoning_effort: Optional[str] = 'low',
+    thinking_budget_tokens: Optional[int] = None,
+    enable_native_web_search: Optional[bool] = False,
     enable_context_manager: bool = True,
     agent_config: Optional[dict] = None,    
     trace: Optional[StatefulTraceClient] = None,
@@ -429,6 +431,8 @@ async def run_agent(
                 include_xml_examples=True,
                 enable_thinking=enable_thinking,
                 reasoning_effort=reasoning_effort,
+                thinking_budget_tokens=thinking_budget_tokens,
+                enable_native_web_search=enable_native_web_search,
                 enable_context_manager=enable_context_manager,
                 generation=generation
             )

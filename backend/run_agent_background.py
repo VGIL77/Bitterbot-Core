@@ -58,6 +58,8 @@ async def run_agent_background(
     reasoning_effort: Optional[str],
     stream: bool,
     enable_context_manager: bool,
+    thinking_budget_tokens: Optional[int] = None,
+    enable_native_web_search: Optional[bool] = False,
     agent_config: Optional[dict] = None,
     is_agent_builder: Optional[bool] = False,
     target_agent_id: Optional[str] = None
@@ -134,6 +136,8 @@ async def run_agent_background(
             thread_id=thread_id, project_id=project_id, stream=stream,
             model_name=model_name,
             enable_thinking=enable_thinking, reasoning_effort=reasoning_effort,
+            thinking_budget_tokens=thinking_budget_tokens,
+            enable_native_web_search=enable_native_web_search,
             enable_context_manager=enable_context_manager,
             agent_config=agent_config,
             trace=trace,

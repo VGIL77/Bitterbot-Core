@@ -178,6 +178,8 @@ class ThreadManager:
         include_xml_examples: bool = False,
         enable_thinking: Optional[bool] = False,
         reasoning_effort: Optional[str] = 'low',
+        thinking_budget_tokens: Optional[int] = None,
+        enable_native_web_search: Optional[bool] = False,
         enable_context_manager: bool = True,
         generation: Optional[StatefulGenerationClient] = None,
     ) -> Union[Dict[str, Any], AsyncGenerator]:
@@ -198,7 +200,9 @@ class ThreadManager:
             max_xml_tool_calls: Maximum number of XML tool calls to allow (0 = no limit)
             include_xml_examples: Whether to include XML tool examples in the system prompt
             enable_thinking: Whether to enable thinking before making a decision
-            reasoning_effort: The effort level for reasoning
+            reasoning_effort: The effort level for reasoning (legacy API)
+            thinking_budget_tokens: Budget for thinking tokens (new API)
+            enable_native_web_search: Enable Anthropic native web search
             enable_context_manager: Whether to enable automatic context summarization.
 
         Returns:
@@ -384,7 +388,9 @@ Here are the XML tools available with examples:
                         tool_choice=tool_choice if processor_config.native_tool_calling else None,
                         stream=stream,
                         enable_thinking=enable_thinking,
-                        reasoning_effort=reasoning_effort
+                        reasoning_effort=reasoning_effort,
+                        thinking_budget_tokens=thinking_budget_tokens,
+                        enable_native_web_search=enable_native_web_search
                     )
                     logger.debug("Successfully received raw LLM API response stream/object")
 

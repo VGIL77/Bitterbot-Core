@@ -85,7 +85,9 @@ def prepare_params(
     top_p: Optional[float] = None,
     model_id: Optional[str] = None,
     enable_thinking: Optional[bool] = False,
-    reasoning_effort: Optional[str] = 'low'
+    reasoning_effort: Optional[str] = 'low',
+    thinking_budget_tokens: Optional[int] = None,
+    enable_native_web_search: Optional[bool] = False
 ) -> Dict[str, Any]:
     """Prepare parameters for the API call."""
     params = {
@@ -125,11 +127,17 @@ def prepare_params(
 
     # # Add Claude-specific headers
     if "claude" in model_name.lower() or "anthropic" in model_name.lower():
+        beta_features = ["output-128k-2025-02-19"]
+        
+        # Add web search beta if enabled
+        if enable_native_web_search:
+            beta_features.append("web-search-2025-03-05")
+            logger.debug("Added native web search beta feature")
+        
         params["extra_headers"] = {
-            # "anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15"
-            "anthropic-beta": "output-128k-2025-02-19"
+            "anthropic-beta": ",".join(beta_features)
         }
-        logger.debug("Added Claude-specific headers")
+        logger.debug(f"Added Claude-specific headers with betas: {beta_features}")
 
     # Add OpenRouter-specific parameters
     if model_name.startswith("openrouter/"):
@@ -224,15 +232,26 @@ def prepare_params(
         apply_cache_control(second_last_user_idx, "second last user")
         apply_cache_control(last_assistant_idx, "last assistant")
 
-    # Add reasoning_effort for Anthropic models if enabled
+    # Add reasoning_effort or thinking for Anthropic models if enabled
     use_thinking = enable_thinking if enable_thinking is not None else False
     is_anthropic = "anthropic" in effective_model_name.lower() or "claude" in effective_model_name.lower()
 
     if is_anthropic and use_thinking:
-        effort_level = reasoning_effort if reasoning_effort else 'low'
-        params["reasoning_effort"] = effort_level
-        params["temperature"] = 1.0 # Required by Anthropic when reasoning_effort is used
-        logger.info(f"Anthropic thinking enabled with reasoning_effort='{effort_level}'")
+        # Check if we're using the newer thinking API with budget_tokens
+        if thinking_budget_tokens is not None:
+            # New thinking API with budget
+            params["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": thinking_budget_tokens
+            }
+            params["temperature"] = 1.0  # Required by Anthropic when thinking is enabled
+            logger.info(f"Anthropic thinking enabled with budget_tokens={thinking_budget_tokens}")
+        else:
+            # Legacy reasoning_effort API
+            effort_level = reasoning_effort if reasoning_effort else 'low'
+            params["reasoning_effort"] = effort_level
+            params["temperature"] = 1.0 # Required by Anthropic when reasoning_effort is used
+            logger.info(f"Anthropic thinking enabled with reasoning_effort='{effort_level}'")
 
     return params
 
@@ -250,7 +269,9 @@ async def make_llm_api_call(
     top_p: Optional[float] = None,
     model_id: Optional[str] = None,
     enable_thinking: Optional[bool] = False,
-    reasoning_effort: Optional[str] = 'low'
+    reasoning_effort: Optional[str] = 'low',
+    thinking_budget_tokens: Optional[int] = None,
+    enable_native_web_search: Optional[bool] = False
 ) -> Union[Dict[str, Any], AsyncGenerator]:
     """
     Make an API call to a language model using LiteLLM.
@@ -269,7 +290,9 @@ async def make_llm_api_call(
         top_p: Top-p sampling parameter
         model_id: Optional ARN for Bedrock inference profiles
         enable_thinking: Whether to enable thinking
-        reasoning_effort: Level of reasoning effort
+        reasoning_effort: Level of reasoning effort (legacy API)
+        thinking_budget_tokens: Budget for thinking tokens (new API)
+        enable_native_web_search: Enable Anthropic native web search
 
     Returns:
         Union[Dict[str, Any], AsyncGenerator]: API response or stream
@@ -279,8 +302,21 @@ async def make_llm_api_call(
         LLMError: For other API-related errors
     """
     # debug <timestamp>.json messages
-    logger.info(f"Making LLM API call to model: {model_name} (Thinking: {enable_thinking}, Effort: {reasoning_effort})")
+    logger.info(f"Making LLM API call to model: {model_name}")
     logger.info(f"📡 API Call: Using model {model_name}")
+    
+    # Log feature usage
+    features = []
+    if enable_thinking:
+        if thinking_budget_tokens is not None:
+            features.append(f"thinking_budget={thinking_budget_tokens}")
+        else:
+            features.append(f"reasoning_effort={reasoning_effort}")
+    if enable_native_web_search:
+        features.append("native_web_search")
+    
+    if features:
+        logger.info(f"🔧 Features enabled: {', '.join(features)}")
     params = prepare_params(
         messages=messages,
         model_name=model_name,
@@ -295,7 +331,9 @@ async def make_llm_api_call(
         top_p=top_p,
         model_id=model_id,
         enable_thinking=enable_thinking,
-        reasoning_effort=reasoning_effort
+        reasoning_effort=reasoning_effort,
+        thinking_budget_tokens=thinking_budget_tokens,
+        enable_native_web_search=enable_native_web_search
     )
     last_error = None
     for attempt in range(MAX_RETRIES):

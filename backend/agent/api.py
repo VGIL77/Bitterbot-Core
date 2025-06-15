@@ -36,6 +36,8 @@ class AgentStartRequest(BaseModel):
     model_name: Optional[str] = None  # Will be set from config.MODEL_TO_USE in the endpoint
     enable_thinking: Optional[bool] = True  # Default to True for Opus 4
     reasoning_effort: Optional[str] = 'high'  # Default to high reasoning
+    thinking_budget_tokens: Optional[int] = None  # Budget for thinking tokens (new API)
+    enable_native_web_search: Optional[bool] = False  # Enable Anthropic native web search
     stream: Optional[bool] = True
     enable_context_manager: Optional[bool] = False
     agent_id: Optional[str] = None  # Custom agent to use
@@ -469,6 +471,8 @@ async def start_agent(
         project_id=project_id,
         model_name=model_name,  # Already resolved above
         enable_thinking=body.enable_thinking, reasoning_effort=body.reasoning_effort,
+        thinking_budget_tokens=body.thinking_budget_tokens, 
+        enable_native_web_search=body.enable_native_web_search,
         stream=body.stream, enable_context_manager=body.enable_context_manager,
         agent_config=agent_config,  # Pass agent configuration
         is_agent_builder=is_agent_builder,
