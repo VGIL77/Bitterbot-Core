@@ -1,0 +1,138 @@
+# Development Configuration for BitterBot AGI Platform
+
+# General Settings
+environment: development
+debug: true
+log_level: debug
+
+# API Gateway
+api:
+  host: 0.0.0.0
+  port: 8000
+  workers: 1
+  reload: true
+  cors:
+    origins: ["*"]
+    allow_credentials: true
+    allow_methods: ["*"]
+    allow_headers: ["*"]
+
+# Database
+database:
+  url: postgresql://bitterbot:password@localhost:5432/bitterbot_agi
+  pool_size: 5
+  max_overflow: 10
+  echo: true
+
+# Redis
+redis:
+  url: redis://localhost:6379/0
+  pool_size: 10
+
+# RabbitMQ
+rabbitmq:
+  url: amqp://guest:guest@localhost:5672/
+  prefetch_count: 1
+
+# Storage
+storage:
+  type: s3
+  endpoint: http://localhost:9000
+  access_key: minioadmin
+  secret_key: minioadmin
+  bucket: bitterbot-dev
+  region: us-east-1
+
+# Protocol Layer
+protocol:
+  orchestrator:
+    host: localhost
+    port: 9001
+    workers: 1
+  validator:
+    host: localhost
+    port: 9002
+    consensus_threshold: 0.51
+  worker:
+    host: localhost
+    port: 9003
+    max_concurrent_tasks: 5
+  discovery:
+    host: localhost
+    port: 9004
+    heartbeat_interval: 30
+
+# Intelligence Layer
+intelligence:
+  training:
+    batch_size: 32
+    learning_rate: 0.001
+    distributed: false
+    device: cpu
+  inference:
+    host: localhost
+    port: 8001
+    model_cache_size: 5
+    batch_timeout: 100
+  federated:
+    enabled: false
+    min_nodes: 3
+    aggregation_rounds: 10
+
+# Conceptual Layer
+conceptual:
+  memory:
+    episodic_capacity: 1000
+    semantic_graph_size: 5000
+    consolidation_interval: 300
+  dream_engine:
+    enabled: true
+    creativity_range: [0.3, 0.9]
+    dream_duration: 300
+
+# Development Layer
+development:
+  codebase_analysis:
+    max_file_size: 1048576  # 1MB
+    supported_languages: [python, javascript, rust, go]
+  plan_generation:
+    max_depth: 5
+    timeout: 60
+  prd_creation:
+    templates_path: ./templates/prd
+
+# Monitoring
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+  grafana:
+    enabled: true
+    port: 3000
+  jaeger:
+    enabled: true
+    agent_host: localhost
+    agent_port: 6831
+  metrics:
+    collection_interval: 10
+    retention_hours: 24
+
+# Security
+security:
+  jwt_secret: dev-secret-key-change-in-production
+  jwt_algorithm: HS256
+  jwt_expiration: 86400
+  password_min_length: 8
+  rate_limit:
+    enabled: true
+    calls: 100
+    period: 60
+
+# Feature Flags
+features:
+  distributed_training: false
+  federated_learning: false
+  dream_engine: true
+  memory_consolidation: true
+  byzantine_tolerance: false
+  differential_privacy: false

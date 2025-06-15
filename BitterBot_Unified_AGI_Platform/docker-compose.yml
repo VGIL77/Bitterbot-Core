@@ -1,0 +1,258 @@
+version: '3.8'
+
+services:
+  # Database Services
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: bitterbot
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: bitterbot_agi
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bitterbot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Storage Services
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Protocol Layer Services
+  orchestrator:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.protocol
+      target: orchestrator
+    ports:
+      - "9001:9001"
+    environment:
+      - RUST_LOG=info
+      - DATABASE_URL=postgresql://bitterbot:password@postgres:5432/bitterbot_agi
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./configs:/app/configs:ro
+
+  validator:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.protocol
+      target: validator
+    ports:
+      - "9002:9002"
+    environment:
+      - RUST_LOG=info
+      - DATABASE_URL=postgresql://bitterbot:password@postgres:5432/bitterbot_agi
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.protocol
+      target: worker
+    deploy:
+      replicas: 3
+    environment:
+      - RUST_LOG=info
+      - ORCHESTRATOR_URL=http://orchestrator:9001
+    depends_on:
+      - orchestrator
+
+  # Intelligence Layer Services
+  ai-trainer:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.intelligence
+      target: trainer
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://bitterbot:password@postgres:5432/bitterbot_agi
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - S3_ENDPOINT=http://minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./models:/models
+      - ./data:/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  ai-inference:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.intelligence
+      target: inference
+    ports:
+      - "8001:8001"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_URL=redis://redis:6379/0
+      - MODEL_CACHE_DIR=/models
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./models:/models:ro
+    deploy:
+      replicas: 2
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Development Layer Services
+  dev-tools:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.development
+    ports:
+      - "8002:8002"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://bitterbot:password@postgres:5432/bitterbot_agi
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./src/development_layer:/app/src/development_layer
+      - ./configs:/app/configs:ro
+
+  # Integration Layer Services
+  api-gateway:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.integration
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://bitterbot:password@postgres:5432/bitterbot_agi
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./src/integration_layer:/app/src/integration_layer
+      - ./configs:/app/configs:ro
+
+  # Monitoring Services
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deployment/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deployment/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./deployment/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    volumes:
+      - jaeger_data:/tmp
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+  jaeger_data:
+
+networks:
+  default:
+    name: bitterbot_network
