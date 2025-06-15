@@ -108,11 +108,25 @@ class Tool(ABC):
         fail_response: Create a failed result
     """
     
-    def __init__(self):
-        """Initialize tool with empty schema registry."""
+    def __init__(self, enable_cache: bool = True):
+        """Initialize tool with empty schema registry and optional caching.
+        
+        Args:
+            enable_cache: Whether to enable caching for this tool instance
+        """
         self._schemas: Dict[str, List[ToolSchema]] = {}
         logger.debug(f"Initializing tool class: {self.__class__.__name__}")
         self._register_schemas()
+        
+        # Initialize caching if enabled
+        self._cache = None
+        if enable_cache:
+            try:
+                from .tool_cache import get_tool_cache
+                self._cache = get_tool_cache()
+                logger.debug(f"Caching enabled for {self.__class__.__name__}")
+            except Exception as e:
+                logger.warning(f"Failed to enable caching for {self.__class__.__name__}: {e}")
 
     def _register_schemas(self):
         """Register schemas from all decorated methods."""

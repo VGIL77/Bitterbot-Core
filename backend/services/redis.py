@@ -149,3 +149,66 @@ async def keys(pattern: str) -> List[str]:
     """Get keys matching a pattern."""
     redis_client = await get_client()
     return await redis_client.keys(pattern)
+
+
+class RedisClient:
+    """Wrapper class for Redis operations to provide a consistent interface."""
+    
+    def __init__(self):
+        """Initialize the Redis client wrapper."""
+        self._client = None
+    
+    async def _ensure_client(self):
+        """Ensure we have a Redis client."""
+        if self._client is None:
+            self._client = await get_client()
+        return self._client
+    
+    async def get(self, key: str) -> str:
+        """Get a value from Redis."""
+        client = await self._ensure_client()
+        return await client.get(key)
+    
+    async def set(self, key: str, value: str, ex: int = None) -> bool:
+        """Set a value in Redis with optional expiration."""
+        client = await self._ensure_client()
+        return await client.set(key, value, ex=ex)
+    
+    async def delete(self, *keys: str) -> int:
+        """Delete one or more keys."""
+        client = await self._ensure_client()
+        return await client.delete(*keys)
+    
+    async def scan_iter(self, match: str = None, count: int = 100):
+        """Scan keys matching a pattern."""
+        client = await self._ensure_client()
+        cursor = 0
+        keys = []
+        
+        # Use scan to get keys matching pattern
+        while True:
+            cursor, batch_keys = await client.scan(cursor, match=match, count=count)
+            keys.extend(batch_keys)
+            
+            if cursor == 0:
+                break
+        
+        return keys
+
+
+# Global Redis client instance for tool cache
+_redis_client_instance = None
+
+
+def get_redis_client() -> RedisClient:
+    """Get or create the global Redis client instance for tool cache.
+    
+    Returns:
+        The global RedisClient instance
+    """
+    global _redis_client_instance
+    
+    if _redis_client_instance is None:
+        _redis_client_instance = RedisClient()
+    
+    return _redis_client_instance

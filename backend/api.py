@@ -157,6 +157,34 @@ async def health_check():
         "instance_id": instance_id
     }
 
+@app.get("/api/cache/metrics")
+async def get_cache_metrics():
+    """Get tool cache metrics and statistics."""
+    try:
+        from agentpress.tool_cache import get_tool_cache
+        cache = get_tool_cache()
+        metrics = cache.get_stats()
+        
+        return {
+            "status": "ok",
+            "metrics": metrics,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting cache metrics: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "metrics": {
+                "enabled": False,
+                "hits": 0,
+                "misses": 0,
+                "errors": 0,
+                "hit_rate": 0.0,
+                "total_requests": 0
+            }
+        }
+
 class CustomMCPDiscoverRequest(BaseModel):
     type: str
     config: Dict[str, Any]

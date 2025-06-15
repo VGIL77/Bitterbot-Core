@@ -2,6 +2,7 @@ from tavily import AsyncTavilyClient
 import httpx
 from dotenv import load_dotenv
 from agentpress.tool import Tool, ToolResult, openapi_schema, xml_schema
+from agentpress.tool_cache import cache_tool_result
 from utils.config import config
 from sandbox.tool_base import SandboxToolsBase
 from agentpress.thread_manager import ThreadManager
@@ -77,6 +78,10 @@ class SandboxWebSearchTool(SandboxToolsBase):
         </invoke>
         </function_calls>
         '''
+    )
+    @cache_tool_result(
+        ttl=300,  # Cache for 5 minutes
+        cache_condition=lambda result: result.success  # Only cache successful searches
     )
     async def web_search(
         self, 
@@ -173,6 +178,10 @@ class SandboxWebSearchTool(SandboxToolsBase):
         </invoke>
         </function_calls>
         '''
+    )
+    @cache_tool_result(
+        ttl=1800,  # Cache for 30 minutes since webpage content changes less frequently
+        cache_condition=lambda result: result.success  # Only cache successful scrapes
     )
     async def scrape_webpage(
         self,

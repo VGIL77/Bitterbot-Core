@@ -2,6 +2,7 @@ import json
 from typing import Union, Dict, Any
 
 from agentpress.tool import Tool, ToolResult, openapi_schema, xml_schema
+from agentpress.tool_cache import cache_tool_result
 from agent.tools.data_providers.LinkedinProvider import LinkedinProvider
 from agent.tools.data_providers.YahooFinanceProvider import YahooFinanceProvider
 from agent.tools.data_providers.AmazonProvider import AmazonProvider
@@ -133,6 +134,11 @@ Use this tool when you need to discover what endpoints are available.
         </invoke>
         </function_calls>
         '''
+    )
+    @cache_tool_result(
+        ttl=lambda result: 3600 if result.success else 60,  # 1 hour for success, 1 min for failures
+        cache_condition=lambda result: result.success,
+        key_params=['service_name', 'route', 'payload']  # Cache based on these params
     )
     async def execute_data_provider_call(
         self,
